@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sky Ace - Arcade Flight</title>
+    
+    <!-- Collegamento PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a0b4b">
+
     <style>
         body {
             background-color: #fad2e1;
@@ -492,9 +497,40 @@
     </div>
 
     <script src="script.js"></script>
-</body>
-</html>
 
-    <script src="script.js"></script>
+    <!-- Script di Registrazione Service Worker per la PWA -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registrato con successo:', registration.scope);
+                        
+                        registration.onupdatefound = () => {
+                            const installingWorker = registration.installing;
+                            installingWorker.onstatechange = () => {
+                                if (installingWorker.state === 'installed') {
+                                    if (navigator.serviceWorker.controller) {
+                                        const updatePopup = document.getElementById('update-popup');
+                                        if (updatePopup) updatePopup.classList.remove('hidden');
+                                    }
+                                }
+                            };
+                        };
+                    })
+                    .catch(error => {
+                        console.log('Registrazione ServiceWorker fallita:', error);
+                    });
+            });
+        }
+
+        // Gestione del click sul pulsante di aggiornamento nel popup
+        const updateActionBtn = document.getElementById('update-action-btn');
+        if (updateActionBtn) {
+            updateActionBtn.addEventListener('click', () => {
+                window.location.reload();
+            });
+        }
+    </script>
 </body>
 </html>
