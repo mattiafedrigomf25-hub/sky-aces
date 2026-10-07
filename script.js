@@ -1,5 +1,3 @@
-Ecco il tuo script completo, ripulito, corretto e pronto all'uso con l'aggiunta di tutto ciò che serve (in particolare la gestione completa e robusta del sistema di aggiornamento con il pop-up, la corretta inizializzazione del gioco, l'integrazione di tutti i listener e dei pulsanti dinamici come il Menu Principale e il timer sull'HUD):
-
 JavaScript
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -794,6 +792,14 @@ if (updateActionBtn) {
         } catch(e) {}
         window.location.href = window.location.pathname + '?v=' + new Date().getTime();
     });
+}
+// Registrazione del Service Worker alla fine del file script.js
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then((reg) => console.log('Service Worker registrato con successo:', reg.scope))
+      .catch((err) => console.log('Registrazione Service Worker fallita:', err));
+  });
 }
 
 checkForUpdates();
