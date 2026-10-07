@@ -23,8 +23,8 @@ const planeGrid = document.getElementById('plane-grid');
 const updatePopup = document.getElementById('update-popup');
 const updateActionBtn = document.getElementById('update-action-btn');
 
-// Versione attuale del gioco in locale
-const CURRENT_VERSION = "1.6"; 
+// Versione attuale del gioco in locale (Incrementata alla v1.7)
+const CURRENT_VERSION = "1.7"; 
 
 // Credenziali Cloud jsonbin.io
 const BIN_ID = '6ac4b87cffd5d1605351f58d';
@@ -51,6 +51,58 @@ let selectedPlaneId = parseInt(localStorage.getItem('sky_ace_selected_id')) || 0
 
 if (totalScoreHudEl) {
     totalScoreHudEl.textContent = totalLifetimeScore;
+}
+
+// --- CREAZIONE DINAMICA TIMER SULL'HUD ---
+let hudContainer = document.querySelector('.hud') || document.querySelector('.game-header') || document.getElementById('current-score').parentElement.parentElement;
+let timerDisplayEl = document.getElementById('timer-display');
+if (!timerDisplayEl && hudContainer) {
+    let timerContainer = document.createElement('div');
+    timerContainer.id = 'timer-container';
+    timerContainer.style.fontSize = '14px';
+    timerContainer.style.fontWeight = 'bold';
+    timerContainer.style.color = '#333';
+    timerContainer.innerHTML = 'Tempo: <span id="timer-display">0s</span>';
+    // Lo inseriamo vicino al punteggio
+    currentScoreEl.parentElement.after(timerContainer);
+    timerDisplayEl = document.getElementById('timer-display');
+}
+
+// --- CREAZIONE DINAMICA PULSANTE "MENU" NELLA SCHERMATA GAME OVER ---
+let restartBtnParent = restartBtn ? restartBtn.parentElement : null;
+let menuBtn = document.getElementById('menu-btn');
+if (!menuBtn && restartBtnParent) {
+    menuBtn = document.createElement('button');
+    menuBtn.id = 'menu-btn';
+    menuBtn.textContent = 'Menu Principale';
+    menuBtn.style.background = '#4caf50';
+    menuBtn.style.color = 'white';
+    menuBtn.style.border = 'none';
+    menuBtn.style.padding = '10px 20px';
+    menuBtn.style.borderRadius = '5px';
+    menuBtn.style.cursor = 'pointer';
+    menuBtn.style.fontWeight = 'bold';
+    menuBtn.style.marginLeft = '10px';
+    restartBtn.after(menuBtn);
+}
+
+// Sistema di Particelle per Esplosioni ed Effetti Visivi
+let particles = [];
+function addParticles(x, y, color = '#ffd54f', count = 12) {
+    for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 3 + 1;
+        particles.push({
+            x: x,
+            y: y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            radius: Math.random() * 3 + 1.5,
+            color: color,
+            alpha: 1,
+            decay: Math.random() * 0.03 + 0.02
+        });
+    }
 }
 
 // Web Audio API per suoni arcade retrò
@@ -159,7 +211,7 @@ window.addEventListener('keyup', (e) => {
     if (e.key === 'ArrowRight') keys.ArrowRight = false;
 });
 
-// --- GESTIONE INPUT TOUCH / MOBILE (Virtual Joystick & Pulsanti) ---
+// --- GESTIONE INPUT TOUCH / MOBILE ---
 let joystick = {
     active: false,
     identifier: null,
@@ -216,7 +268,6 @@ function updateJoystick(clientX) {
     joystick.vx = dx / maxDist;
 }
 
-// Pulsanti touch dedicati opzionali
 const leftBtn = document.getElementById('left-btn');
 const rightBtn = document.getElementById('right-btn');
 
@@ -227,13 +278,12 @@ if (leftBtn && rightBtn) {
     rightBtn.addEventListener('touchend', (e) => { e.preventDefault(); keys.ArrowRight = false; });
 }
 
-// Mostra i controlli touch se è un dispositivo mobile
 if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
     let mobileControls = document.getElementById('mobile-controls');
     if (mobileControls) mobileControls.style.display = 'flex';
 }
 
-// --- GESTIONE MODALE E SBLOCCO AEREI (10 Aerei) ---
+// --- GESTIONE MODALE E SBLOCCO AEREI ---
 function renderPlaneGrid() {
     planeGrid.innerHTML = '';
     PLANES_DATA.forEach(p => {
@@ -308,9 +358,12 @@ function startGame() {
     startScreen.classList.add('hidden');
     planeModal.classList.add('hidden');
     
+    // Aggiorna l'aereo selezionato corrente prima di partire
+    plane.emoji = PLANES_DATA[selectedPlaneId].emoji;
     plane.x = canvas.width / 2 - plane.width / 2;
     obstacles = [];
     enemyLasers = [];
+    particles = [];
     score = 0;
     lives = 3;
     gameSpeed = 3;
@@ -320,6 +373,7 @@ function startGame() {
     doublePointsActive = false;
     
     currentScoreEl.textContent = score;
+    if (timerDisplayEl) timerDisplayEl.textContent = '0s';
     if (totalScoreHudEl) totalScoreHudEl.textContent = totalLifetimeScore;
     updateLivesDisplay();
 
@@ -386,6 +440,18 @@ function spawnObstacle() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Disegno particelle
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
     if (shieldActive) {
         ctx.strokeStyle = '#29b6f6';
         ctx.lineWidth = 3;
@@ -405,12 +471,11 @@ function draw() {
         ctx.restore();
     }
 
-  for (let obs of obstacles) {
+    for (let obs of obstacles) {
         ctx.save();
         ctx.translate(obs.x + obs.width / 2, obs.y + obs.height / 2);
         
-        // Ruotiamo di 90 gradi in senso orario (Math.PI / 2) 
-        // per raddrizzare l'emoji sul cellulare facendola puntare in basso.
+        // Rotazione corretta per far puntare il nemico dritto verso il basso
         if (obs.type === 'laserEnemy') {
             ctx.rotate(Math.PI / 2); 
         }
@@ -439,10 +504,16 @@ function updateGame() {
     if (!gameRunning) return;
 
     survivalTime++;
+    
+    // Aggiornamento timer in secondi (60 frame = 1 secondo circa)
+    if (survivalTime % 60 === 0 && timerDisplayEl) {
+        timerDisplayEl.textContent = Math.floor(survivalTime / 60) + 's';
+    }
+
     gameSpeed = 3 + Math.floor(survivalTime / 1000) * 0.1; 
     spawnRate = Math.max(25, 40 - Math.floor(survivalTime / 400) * 2); 
     
-    if (survivalTime % 400 === 0) windForce = (Math.random() - 0.5) * 2;
+    if (survivalTime % 400 === 0) windForce = (Math.random() - 0.5) * 1.5;
     if (survivalTime % 600 === 0) windForce = 0;
 
     if (shieldActive) {
@@ -464,6 +535,17 @@ function updateGame() {
     if (plane.x < 0) plane.x = 0;
     if (plane.x + plane.width > canvas.width) plane.x = canvas.width - plane.width;
 
+    // Aggiornamento particelle
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= p.decay;
+        if (p.alpha <= 0) {
+            particles.splice(i, 1);
+        }
+    }
+
     obstacleTimer++;
     if (obstacleTimer > spawnRate) {
         spawnObstacle();
@@ -479,6 +561,7 @@ function updateGame() {
             plane.y + padding < enemyLasers[i].y + enemyLasers[i].height - padding &&
             plane.y + plane.height - padding > enemyLasers[i].y + enemyLasers[i].height
         ) {
+            addParticles(plane.x + plane.width / 2, plane.y + plane.height / 2, '#ff1744', 10);
             if (shieldActive) {
                 playSound('shield');
                 shieldActive = false;
@@ -522,6 +605,7 @@ function updateGame() {
             plane.y + padding < obs.y + obs.height - padding &&
             plane.y + plane.height - padding > obs.y + padding
         ) {
+            addParticles(obs.x + obs.width / 2, obs.y + obs.height / 2, obs.type === 'bonus' ? '#69f0ae' : '#ff9800', 12);
             if (obs.type === 'lightning') {
                 if (shieldActive) {
                     playSound('shield');
@@ -653,6 +737,21 @@ restartBtn.addEventListener('click', () => {
     startGame();
 });
 
+// Funzione del nuovo tasto "Menu Principale" a fine partita
+if (menuBtn) {
+    menuBtn.addEventListener('click', () => {
+        gameOverScreen.classList.add('hidden');
+        saveScoreSection.classList.remove('hidden');
+        playerNameInput.value = '';
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Salva in Classifica";
+        
+        // Riporta alla schermata iniziale di avvio
+        gameStarted = false;
+        startScreen.classList.remove('hidden');
+    });
+}
+
 // --- CONTROLLO AGGIORNAMENTI ---
 async function checkForUpdates() {
     try {
@@ -678,12 +777,15 @@ if (updateActionBtn) {
                 headers: { 'X-Master-Key': MASTER_KEY }
             });
             let data = await response.json();
-            let onlineVersion = data.record.latestVersion || "1.5";
+            let onlineVersion = data.record.latestVersion || CURRENT_VERSION;
             localStorage.setItem('sky_ace_updated_version', onlineVersion);
         } catch(e) {}
         window.location.href = window.location.pathname + '?v=' + new Date().getTime();
     });
 }
+
+checkForUpdates();
+draw();
 
 checkForUpdates();
 draw();
