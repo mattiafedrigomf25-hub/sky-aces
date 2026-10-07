@@ -1,3 +1,6 @@
+Ecco il tuo file CSS aggiornato e completo, arricchito con gli stili per il nuovo pulsante Menu Principale, il contenitore e il testo del timer, e perfettamente allineato con le schermate di gioco:
+
+CSS
 body {
     background-color: #fad2e1;
     color: white;
@@ -32,6 +35,13 @@ h1 {
 #lives-display {
     font-size: 18px;
     letter-spacing: 3px;
+}
+
+/* Stile per il container e il testo del Timer dinamico inserito nell'HUD */
+#timer-container {
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
 }
 
 /* Wrapper principale che contiene sia il canvas che i menu sovrapposti */
@@ -237,6 +247,22 @@ button {
 
 button:hover {
     background-color: #0288d1;
+}
+
+/* Stile personalizzato per il pulsante Menu Principale nella schermata di fine gioco */
+#menu-btn {
+    background: #4caf50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+#menu-btn:hover {
+    background: #388e3c;
 }
 
 #leaderboard-container {
