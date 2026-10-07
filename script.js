@@ -405,14 +405,14 @@ function draw() {
         ctx.restore();
     }
 
-   for (let obs of obstacles) {
+  for (let obs of obstacles) {
         ctx.save();
         ctx.translate(obs.x + obs.width / 2, obs.y + obs.height / 2);
         
-        // Se è l'aereo nemico, lo ruotiamo di 180 gradi (Math.PI) 
-        // così il muso punta perfettamente verso il basso verso il giocatore.
+        // Ruotiamo di 90 gradi in senso orario (Math.PI / 2) 
+        // per raddrizzare l'emoji sul cellulare facendola puntare in basso.
         if (obs.type === 'laserEnemy') {
-            ctx.rotate(Math.PI); 
+            ctx.rotate(Math.PI / 2); 
         }
 
         ctx.font = '30px sans-serif';
