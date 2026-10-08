@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sky Ace - Arcade Flight</title>
     <!-- Collegamento al Manifest della PWA -->
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1a0b4b">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a0b4b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
     <style>
         body {
@@ -21,7 +21,7 @@
             justify-content: center;
             min-height: 100vh;
             margin: 0;
-            overflow: auto; /* Permette lo scroll se lo schermo è troppo piccolo in altezza */
+            overflow: auto;
             touch-action: manipulation;
         }
 
@@ -42,9 +42,9 @@
 
         .score-board {
             margin-bottom: 8px;
-            font-size: 16px;
+            font-size: 15px;
             display: flex;
-            justify-content: space-around;
+            justify-content: space-between;
             align-items: center;
             padding: 0 5px;
             color: #333;
@@ -52,8 +52,8 @@
         }
 
         #lives-display {
-            font-size: 16px;
-            letter-spacing: 2px;
+            font-size: 15px;
+            letter-spacing: 1px;
         }
 
         /* Wrapper principale che contiene sia il canvas che i menu sovrapposti */
@@ -414,11 +414,10 @@
             border-radius: 10px;
         }
 
-        /* Regole di adattamento per schermi molto piccoli (smartphone compatti) */
         @media (max-width: 420px) {
             .canvas-wrapper {
                 width: 92vw;
-                height: calc(92vw * 1.5); /* Mantiene le proporzioni 400x600 */
+                height: calc(92vw * 1.5);
                 max-height: 75vh;
             }
             .game-container {
@@ -431,10 +430,14 @@
 
     <div class="game-container">
         <h1>Sky Ace</h1>
+        <!-- BARRA SUPERIORE AGGIORNATA -->
         <div class="score-board">
-            <span>Punti: <strong id="current-score">0</strong></span>
-            <span>Tot: <strong id="total-score-hud">0</strong></span>
-            <span id="lives-display">❤❤❤</span>
+            <div>Punti: <strong id="current-score">0</strong></div>
+            <div id="timer-container">Tempo: <span id="timer-display">0s</span></div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span id="record-container">Record: <span id="record-display">0</span></span>
+                <span id="lives-display">❤❤❤</span>
+            </div>
         </div>
 
         <div class="canvas-wrapper">
@@ -525,7 +528,6 @@
             });
         }
 
-        // Gestione del click sul pulsante di aggiornamento nel popup
         const updateActionBtn = document.getElementById('update-action-btn');
         if (updateActionBtn) {
             updateActionBtn.addEventListener('click', () => {
