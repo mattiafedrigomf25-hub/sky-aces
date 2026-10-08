@@ -1,7 +1,6 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const currentScoreEl = document.getElementById('current-score');
-const totalScoreHudEl = document.getElementById('total-score-hud');
 const livesEl = document.getElementById('lives-display');
 const startScreen = document.getElementById('start-screen');
 const startBtn = document.getElementById('start-btn');
@@ -24,7 +23,7 @@ const updatePopup = document.getElementById('update-popup');
 const updateActionBtn = document.getElementById('update-action-btn');
 
 // Versione attuale del gioco
-const CURRENT_VERSION = "2.0"; 
+const CURRENT_VERSION = "1.8"; 
 
 // Credenziali Cloud jsonbin.io
 const BIN_ID = '6ac4b87cffd5d1605351f58d';
@@ -50,47 +49,30 @@ let highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
 let unlockedPlanes = JSON.parse(localStorage.getItem('sky_ace_unlocked')) || [0]; 
 let selectedPlaneId = parseInt(localStorage.getItem('sky_ace_selected_id')) || 0;
 
-// Nascondiamo il totale dall'HUD principale se presente nel DOM
-if (totalScoreHudEl) {
-    let parentContainer = totalScoreHudEl.closest('div') || totalScoreHudEl.parentElement;
-    if (parentContainer) parentContainer.style.display = 'none';
-}
-
-// --- CREAZIONE DINAMICA HUD (Tempo e Record a destra) ---
-let hudContainer = document.querySelector('.hud') || document.querySelector('.game-header') || (currentScoreEl ? currentScoreEl.parentElement.parentElement : null);
+// --- GESTIONE HUD (Tempo in mezzo, Record a destra vicino alle vite) ---
 let timerDisplayEl = document.getElementById('timer-display');
 let recordDisplayEl = document.getElementById('record-display');
 
-if (hudContainer && currentScoreEl) {
-    // Assicuriamoci che esista il timer in mezzo
-    if (!timerDisplayEl) {
+// Se non esistono nel DOM, li creiamo dinamicamente nella barra superiore
+if (currentScoreEl) {
+    let hudBar = currentScoreEl.parentElement; // Il contenitore degli elementi in alto
+    
+    if (!timerDisplayEl && hudBar) {
         let timerContainer = document.createElement('div');
         timerContainer.id = 'timer-container';
-        timerContainer.style.fontSize = '14px';
-        timerContainer.style.fontWeight = 'bold';
-        timerContainer.style.color = '#333';
         timerContainer.innerHTML = 'Tempo: <span id="timer-display">0s</span>';
+        // Inseriamo il timer subito dopo il punteggio
         currentScoreEl.parentElement.after(timerContainer);
         timerDisplayEl = document.getElementById('timer-display');
     }
 
-    // Aggiungiamo il Record a destra di fianco alle vite
     if (!recordDisplayEl && livesEl) {
         let recordContainer = document.createElement('div');
         recordContainer.id = 'record-container';
-        recordContainer.style.fontSize = '14px';
-        recordContainer.style.fontWeight = 'bold';
-        recordContainer.style.color = '#333';
-        recordContainer.style.marginRight = '10px';
         recordContainer.innerHTML = 'Record: <span id="record-display">' + highScore + '</span>';
+        // Inseriamo il record a sinistra delle vite
         livesEl.parentElement.insertBefore(recordContainer, livesEl);
         recordDisplayEl = document.getElementById('record-display');
-    }
-}
-
-if (currentScoreEl && currentScoreEl.previousSibling) {
-    if (currentScoreEl.previousSibling.nodeType === Node.TEXT_NODE) {
-        currentScoreEl.previousSibling.textContent = "Score: ";
     }
 }
 
@@ -119,13 +101,11 @@ function addParticles(x, y, color = '#ffd54f', count = 12) {
         const angle = Math.random() * Math.PI * 2;
         const speed = Math.random() * 3 + 1;
         particles.push({
-            x: x,
-            y: y,
+            x: x, y: y,
             vx: Math.cos(angle) * speed,
             vy: Math.sin(angle) * speed,
             radius: Math.random() * 3 + 1.5,
-            color: color,
-            alpha: 1,
+            color: color, alpha: 1,
             decay: Math.random() * 0.03 + 0.02
         });
     }
@@ -134,8 +114,7 @@ function addParticles(x, y, color = '#ffd54f', count = 12) {
 let plane = {
     x: canvas.width / 2 - 20,
     y: canvas.height - 80,
-    width: 40,
-    height: 40,
+    width: 40, height: 40,
     speed: 6,
     emoji: PLANES_DATA[selectedPlaneId].emoji
 };
@@ -162,7 +141,6 @@ let keys = { ArrowLeft: false, ArrowRight: false };
 window.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft') keys.ArrowLeft = true;
     if (e.key === 'ArrowRight') keys.ArrowRight = true;
-    
     if (e.key === ' ' && !gameStarted && planeModal && planeModal.classList.contains('hidden')) {
         e.preventDefault();
         startGame();
@@ -175,14 +153,7 @@ window.addEventListener('keyup', (e) => {
 });
 
 // --- GESTIONE TOUCH E JOYSTICK MOBILE ---
-let joystick = {
-    active: false,
-    identifier: null,
-    startX: 0,
-    startY: 0,
-    vx: 0
-};
-
+let joystick = { active: false, identifier: null, startX: 0, startY: 0, vx: 0 };
 const vJoystickEl = document.getElementById('virtualJoystick');
 const knobEl = document.getElementById('joystickKnob');
 
@@ -232,7 +203,6 @@ function updateJoystick(clientX) {
 
 const leftBtn = document.getElementById('left-btn');
 const rightBtn = document.getElementById('right-btn');
-
 if (leftBtn && rightBtn) {
     leftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys.ArrowLeft = true; });
     leftBtn.addEventListener('touchend', (e) => { e.preventDefault(); keys.ArrowLeft = false; });
@@ -256,7 +226,6 @@ function renderPlaneGrid() {
         let isSelected = selectedPlaneId === p.id;
 
         slot.className = 'plane-slot';
-        
         if (isUnlocked) {
             slot.classList.add('unlocked');
             if (isSelected) slot.classList.add('selected');
@@ -317,7 +286,6 @@ if (closePlaneModalBtn) {
     };
 }
 
-// --- SCHERMO INTERO PER CELLULARI ---
 function requestMobileFullscreen() {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
     if (isMobile && !document.fullscreenElement) {
@@ -345,8 +313,7 @@ function startGame() {
     particles = [];
     
     highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
-    score = 0; // Partenza pulita a 0 per ogni nuova partita
-
+    score = 0; 
     lives = 3;
     gameSpeed = 3;
     survivalTime = 0;
@@ -375,49 +342,22 @@ function spawnObstacle() {
     let type, symbol, points, width, height;
 
     if (rand < 0.45) {
-        type = 'lightning';
-        symbol = '⚡';
-        points = 1;
-        width = 40;
-        height = 30;
+        type = 'lightning'; symbol = '⚡'; points = 1; width = 40; height = 30;
     } else if (rand < 0.65) {
-        type = 'laserEnemy'; 
-        symbol = '🛩️';
-        points = -5;
-        width = 40;
-        height = 40;
+        type = 'laserEnemy'; symbol = '🛩️'; points = -5; width = 40; height = 40;
     } else if (rand < 0.80) {
-        type = 'bonus';
-        symbol = '🌟';
-        points = 3;
-        width = 40;
-        height = 40;
+        type = 'bonus'; symbol = '🌟'; points = 3; width = 40; height = 40;
     } else if (rand < 0.92) {
-        type = 'shield';
-        symbol = '🛡️';
-        points = 5;
-        width = 40;
-        height = 40;
+        type = 'shield'; symbol = '🛡️'; points = 5; width = 40; height = 40;
     } else {
-        type = 'double';
-        symbol = '💎';
-        points = 10;
-        width = 40;
-        height = 40;
+        type = 'double'; symbol = '💎'; points = 10; width = 40; height = 40;
     }
     
     let x = Math.random() * (canvas.width - width);
-    
     obstacles.push({
-        x: x,
-        y: -50,
-        width: width,
-        height: height,
+        x: x, y: -50, width: width, height: height,
         speed: gameSpeed + (type === 'laserEnemy' ? 0.3 : Math.random() * 1.5),
-        points: points,
-        type: type,
-        symbol: symbol,
-        shootTimer: 0 
+        points: points, type: type, symbol: symbol, shootTimer: 0 
     });
 }
 
@@ -457,9 +397,7 @@ function draw() {
     for (let obs of obstacles) {
         ctx.save();
         ctx.translate(obs.x + obs.width / 2, obs.y + obs.height / 2);
-        if (obs.type === 'laserEnemy') {
-            ctx.rotate(Math.PI / 2); 
-        }
+        if (obs.type === 'laserEnemy') ctx.rotate(Math.PI / 2); 
         ctx.font = '30px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -484,7 +422,6 @@ function updateGame() {
     if (!gameRunning) return;
 
     survivalTime++;
-    
     if (survivalTime % 60 === 0 && timerDisplayEl) {
         timerDisplayEl.textContent = Math.floor(survivalTime / 60) + 's';
     }
@@ -506,9 +443,7 @@ function updateGame() {
 
     if (keys.ArrowLeft) plane.x -= plane.speed;
     if (keys.ArrowRight) plane.x += plane.speed;
-    if (joystick.active) {
-        plane.x += joystick.vx * plane.speed;
-    }
+    if (joystick.active) plane.x += joystick.vx * plane.speed;
     plane.x += windForce;
 
     if (plane.x < 0) plane.x = 0;
@@ -516,12 +451,8 @@ function updateGame() {
 
     for (let i = particles.length - 1; i >= 0; i--) {
         let p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.alpha -= p.decay;
-        if (p.alpha <= 0) {
-            particles.splice(i, 1);
-        }
+        p.x += p.vx; p.y += p.vy; p.alpha -= p.decay;
+        if (p.alpha <= 0) particles.splice(i, 1);
     }
 
     obstacleTimer++;
@@ -565,9 +496,7 @@ function updateGame() {
                 enemyLasers.push({
                     x: obs.x + obs.width / 2 - 3,
                     y: obs.y + obs.height,
-                    width: 6,
-                    height: 16,
-                    speed: 6
+                    width: 6, height: 16, speed: 6
                 });
                 obs.shootTimer = 0;
             }
@@ -648,12 +577,10 @@ function updateGame() {
 function triggerGameOver() {
     gameRunning = false;
     
-    if (score > highScore) {
-        highScore = score;
-    }
+    if (score > highScore) highScore = score;
     localStorage.setItem('sky_ace_highscore', highScore);
 
-    // Aggiunge i punti della partita appena conclusa al totale cumulativo dell'Hangar
+    // Salva i punti di questa partita nel totale cumulativo dell'Hangar
     totalLifetimeScore += score;
     localStorage.setItem('sky_ace_total_score', totalLifetimeScore);
 
@@ -721,7 +648,6 @@ if (saveBtn) {
 
 if (restartBtn) {
     restartBtn.addEventListener('click', () => {
-        if (gameOverScreen) gameOverScoreScreenAdd = gameOverScreen.classList.add('hidden');
         if (gameOverScreen) gameOverScreen.classList.add('hidden');
         if (saveScoreSection) saveScoreSection.classList.remove('hidden');
         if (playerNameInput) playerNameInput.value = '';
@@ -742,7 +668,6 @@ if (menuBtn) {
             saveBtn.disabled = false;
             saveBtn.textContent = "Salva in Classifica";
         }
-        
         gameStarted = false;
         if (startScreen) startScreen.classList.remove('hidden');
     });
@@ -777,6 +702,5 @@ if (updateActionBtn) {
     });
 }
 
-// Avvio del disegno iniziale
 draw();
 checkForUpdates().catch(err => console.log("Controllo aggiornamenti non disponibile."));
