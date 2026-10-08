@@ -30,7 +30,7 @@ const CURRENT_VERSION = "1.9";
 const BIN_ID = '6ac4b87cffd5d1605351f58d';
 const MASTER_KEY = '$2a$10$aplyk/beh6fEjv43q.yWK.yNbASVpWB2lHxQ8.O3c9aj0.zzW4Kuu';
 
-// Definizione dei 10 aerei con icone coerenti e punteggi incrementali cumulativi
+// Definizione dei 10 aerei
 const PLANES_DATA = [
     { id: 0, emoji: '✈️', name: 'Aereo di Linea', points: 0 },
     { id: 1, emoji: '🛩️', name: 'Monomotore', points: 200 },
@@ -44,28 +44,48 @@ const PLANES_DATA = [
     { id: 9, emoji: '✈️', name: 'Aereo Acrobatico', points: 1800 }
 ];
 
-// Gestione Punti Totali Cumulativi (Hangar) e HighScore di singola partita
+// Gestione Punti Totali (Hangar) e HighScore
 let totalLifetimeScore = parseInt(localStorage.getItem('sky_ace_total_score')) || 0;
 let highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
 let unlockedPlanes = JSON.parse(localStorage.getItem('sky_ace_unlocked')) || [0]; 
 let selectedPlaneId = parseInt(localStorage.getItem('sky_ace_selected_id')) || 0;
 
+// Nascondiamo il totale dall'HUD principale se presente nel DOM
 if (totalScoreHudEl) {
-    totalScoreHudEl.textContent = totalLifetimeScore;
+    let parentContainer = totalScoreHudEl.closest('div') || totalScoreHudEl.parentElement;
+    if (parentContainer) parentContainer.style.display = 'none';
 }
 
-// --- CREAZIONE DINAMICA TIMER SULL'HUD ---
+// --- CREAZIONE DINAMICA HUD (Tempo e Record a destra) ---
 let hudContainer = document.querySelector('.hud') || document.querySelector('.game-header') || (currentScoreEl ? currentScoreEl.parentElement.parentElement : null);
 let timerDisplayEl = document.getElementById('timer-display');
-if (!timerDisplayEl && hudContainer && currentScoreEl) {
-    let timerContainer = document.createElement('div');
-    timerContainer.id = 'timer-container';
-    timerContainer.style.fontSize = '14px';
-    timerContainer.style.fontWeight = 'bold';
-    timerContainer.style.color = '#333';
-    timerContainer.innerHTML = 'Tempo: <span id="timer-display">0s</span>';
-    currentScoreEl.parentElement.after(timerContainer);
-    timerDisplayEl = document.getElementById('timer-display');
+let recordDisplayEl = document.getElementById('record-display');
+
+if (hudContainer && currentScoreEl) {
+    // Assicuriamoci che esista il timer in mezzo
+    if (!timerDisplayEl) {
+        let timerContainer = document.createElement('div');
+        timerContainer.id = 'timer-container';
+        timerContainer.style.fontSize = '14px';
+        timerContainer.style.fontWeight = 'bold';
+        timerContainer.style.color = '#333';
+        timerContainer.innerHTML = 'Tempo: <span id="timer-display">0s</span>';
+        currentScoreEl.parentElement.after(timerContainer);
+        timerDisplayEl = document.getElementById('timer-display');
+    }
+
+    // Aggiungiamo il Record a destra di fianco alle vite
+    if (!recordDisplayEl && livesEl) {
+        let recordContainer = document.createElement('div');
+        recordContainer.id = 'record-container';
+        recordContainer.style.fontSize = '14px';
+        recordContainer.style.fontWeight = 'bold';
+        recordContainer.style.color = '#333';
+        recordContainer.style.marginRight = '10px';
+        recordContainer.innerHTML = 'Record: <span id="record-display">' + highScore + '</span>';
+        livesEl.parentElement.insertBefore(recordContainer, livesEl);
+        recordDisplayEl = document.getElementById('record-display');
+    }
 }
 
 if (currentScoreEl && currentScoreEl.previousSibling) {
@@ -325,7 +345,7 @@ function startGame() {
     particles = [];
     
     highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
-    score = highScore;
+    score = 0; // Partenza pulita a 0 per ogni nuova partita
 
     lives = 3;
     gameSpeed = 3;
@@ -336,7 +356,7 @@ function startGame() {
     
     if (currentScoreEl) currentScoreEl.textContent = score;
     if (timerDisplayEl) timerDisplayEl.textContent = '0s';
-    if (totalScoreHudEl) totalScoreHudEl.textContent = totalLifetimeScore;
+    if (recordDisplayEl) recordDisplayEl.textContent = highScore;
     updateLivesDisplay();
 
     updateGame();
@@ -523,7 +543,7 @@ function updateGame() {
             if (shieldActive) {
                 shieldActive = false;
             } else {
-                score = Math.max(highScore, score - 5);
+                score = Math.max(0, score - 5);
                 if (currentScoreEl) currentScoreEl.textContent = score;
             }
             enemyLasers.splice(i, 1);
@@ -579,7 +599,7 @@ function updateGame() {
                     shieldActive = false;
                     obstacles.splice(i, 1);
                 } else {
-                    score = Math.max(highScore, score - 5);
+                    score = Math.max(0, score - 5);
                     if (currentScoreEl) currentScoreEl.textContent = score;
                     obstacles.splice(i, 1);
                 }
@@ -598,6 +618,7 @@ function updateGame() {
                 score += gainedPoints;
                 if (score > highScore) {
                     highScore = score;
+                    if (recordDisplayEl) recordDisplayEl.textContent = highScore;
                 }
 
                 if (currentScoreEl) currentScoreEl.textContent = score;
@@ -612,6 +633,7 @@ function updateGame() {
                 score += gainedPoints;
                 if (score > highScore) {
                     highScore = score;
+                    if (recordDisplayEl) recordDisplayEl.textContent = highScore;
                 }
                 if (currentScoreEl) currentScoreEl.textContent = score;
             }
@@ -631,9 +653,9 @@ function triggerGameOver() {
     }
     localStorage.setItem('sky_ace_highscore', highScore);
 
+    // Aggiunge i punti della partita appena conclusa al totale cumulativo dell'Hangar
     totalLifetimeScore += score;
     localStorage.setItem('sky_ace_total_score', totalLifetimeScore);
-    if (totalScoreHudEl) totalScoreHudEl.textContent = totalLifetimeScore;
 
     if (finalScoreEl) finalScoreEl.textContent = score;
     if (saveScoreSection) saveScoreSection.classList.remove('hidden'); 
@@ -699,6 +721,7 @@ if (saveBtn) {
 
 if (restartBtn) {
     restartBtn.addEventListener('click', () => {
+        if (gameOverScreen) gameOverScoreScreenAdd = gameOverScreen.classList.add('hidden');
         if (gameOverScreen) gameOverScreen.classList.add('hidden');
         if (saveScoreSection) saveScoreSection.classList.remove('hidden');
         if (playerNameInput) playerNameInput.value = '';
@@ -754,6 +777,6 @@ if (updateActionBtn) {
     });
 }
 
-// Avvio del disegno iniziale del gioco
+// Avvio del disegno iniziale
 draw();
 checkForUpdates().catch(err => console.log("Controllo aggiornamenti non disponibile."));
