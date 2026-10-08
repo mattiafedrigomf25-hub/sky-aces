@@ -23,7 +23,7 @@ const planeGrid = document.getElementById('plane-grid');
 const updatePopup = document.getElementById('update-popup');
 const updateActionBtn = document.getElementById('update-action-btn');
 
-// Versione attuale del gioco in locale (Incrementata alla v1.7)
+// Versione attuale del gioco
 const CURRENT_VERSION = "1.8"; 
 
 // Credenziali Cloud jsonbin.io
@@ -44,8 +44,9 @@ const PLANES_DATA = [
     { id: 9, emoji: '✈️', name: 'Aereo Acrobatico', points: 1800 }
 ];
 
-// Gestione Punti Totali Cumulativi e Sblocco Aerei
+// Gestione Punti Totali Cumulativi (Hangar) e HighScore di singola partita
 let totalLifetimeScore = parseInt(localStorage.getItem('sky_ace_total_score')) || 0;
+let highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
 let unlockedPlanes = JSON.parse(localStorage.getItem('sky_ace_unlocked')) || [0]; 
 let selectedPlaneId = parseInt(localStorage.getItem('sky_ace_selected_id')) || 0;
 
@@ -67,6 +68,12 @@ if (!timerDisplayEl && hudContainer && currentScoreEl) {
     timerDisplayEl = document.getElementById('timer-display');
 }
 
+if (currentScoreEl && currentScoreEl.previousSibling) {
+    if (currentScoreEl.previousSibling.nodeType === Node.TEXT_NODE) {
+        currentScoreEl.previousSibling.textContent = "Score: ";
+    }
+}
+
 // --- CREAZIONE DINAMICA PULSANTE "MENU" NELLA SCHERMATA GAME OVER ---
 let restartBtnParent = restartBtn ? restartBtn.parentElement : null;
 let menuBtn = document.getElementById('menu-btn');
@@ -85,7 +92,7 @@ if (!menuBtn && restartBtnParent) {
     restartBtn.after(menuBtn);
 }
 
-// Sistema di Particelle per Esplosioni ed Effetti Visivi
+// Sistema di Particelle
 let particles = [];
 function addParticles(x, y, color = '#ffd54f', count = 12) {
     for (let i = 0; i < count; i++) {
@@ -104,67 +111,6 @@ function addParticles(x, y, color = '#ffd54f', count = 12) {
     }
 }
 
-// Web Audio API per suoni arcade retrò
-let audioCtx = null;
-function initAudio() {
-    if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-}
-
-function playSound(type) {
-    if (!audioCtx) return;
-    try {
-        let osc = audioCtx.createOscillator();
-        let gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        let now = audioCtx.currentTime;
-        if (type === 'bonus') {
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(400, now);
-            osc.frequency.exponentialRampToValueAtTime(800, now + 0.15);
-            gain.gain.setValueAtTime(0.2, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-            osc.start(now);
-            osc.stop(now + 0.15);
-        } else if (type === 'shield') {
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(300, now);
-            osc.frequency.linearRampToValueAtTime(600, now + 0.3);
-            gain.gain.setValueAtTime(0.2, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-            osc.start(now);
-            osc.stop(now + 0.3);
-        } else if (type === 'hit') {
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(150, now);
-            osc.frequency.linearRampToValueAtTime(50, now + 0.2);
-            gain.gain.setValueAtTime(0.3, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-            osc.start(now);
-            osc.stop(now + 0.2);
-        } else if (type === 'laser') {
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(400, now);
-            osc.frequency.linearRampToValueAtTime(100, now + 0.1);
-            gain.gain.setValueAtTime(0.15, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-            osc.start(now);
-            osc.stop(now + 0.1);
-        } else if (type === 'gameover') {
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(200, now);
-            osc.frequency.linearRampToValueAtTime(60, now + 0.6);
-            gain.gain.setValueAtTime(0.4, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
-            osc.start(now);
-            osc.stop(now + 0.6);
-        }
-    } catch(e) {}
-}
-
 let plane = {
     x: canvas.width / 2 - 20,
     y: canvas.height - 80,
@@ -179,7 +125,7 @@ let enemyLasers = [];
 let obstacleTimer = 0;
 let spawnRate = 40; 
 let gameSpeed = 3;
-let score = 0;
+let score = 0; 
 let lives = 3;
 let gameStarted = false; 
 let gameRunning = false; 
@@ -193,9 +139,7 @@ let windForce = 0;
 
 let keys = { ArrowLeft: false, ArrowRight: false };
 
-// --- GESTIONE INPUT TASTIERA ---
 window.addEventListener('keydown', (e) => {
-    initAudio();
     if (e.key === 'ArrowLeft') keys.ArrowLeft = true;
     if (e.key === 'ArrowRight') keys.ArrowRight = true;
     
@@ -210,7 +154,7 @@ window.addEventListener('keyup', (e) => {
     if (e.key === 'ArrowRight') keys.ArrowRight = false;
 });
 
-// --- GESTIONE INPUT TOUCH / MOBILE ---
+// --- GESTIONE TOUCH E JOYSTICK MOBILE ---
 let joystick = {
     active: false,
     identifier: null,
@@ -225,7 +169,6 @@ const knobEl = document.getElementById('joystickKnob');
 if (vJoystickEl && knobEl) {
     vJoystickEl.addEventListener('touchstart', (e) => {
         e.preventDefault();
-        initAudio();
         const touch = e.changedTouches[0];
         joystick.active = true;
         joystick.identifier = touch.identifier;
@@ -271,9 +214,9 @@ const leftBtn = document.getElementById('left-btn');
 const rightBtn = document.getElementById('right-btn');
 
 if (leftBtn && rightBtn) {
-    leftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); keys.ArrowLeft = true; });
+    leftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys.ArrowLeft = true; });
     leftBtn.addEventListener('touchend', (e) => { e.preventDefault(); keys.ArrowLeft = false; });
-    rightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); keys.ArrowRight = true; });
+    rightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys.ArrowRight = true; });
     rightBtn.addEventListener('touchend', (e) => { e.preventDefault(); keys.ArrowRight = false; });
 }
 
@@ -316,7 +259,6 @@ function renderPlaneGrid() {
             slot.onclick = () => {
                 unlockedPlanes.push(p.id);
                 localStorage.setItem('sky_ace_unlocked', JSON.stringify(unlockedPlanes));
-                playSound('bonus');
                 renderPlaneGrid();
             };
         } else {
@@ -355,19 +297,36 @@ if (closePlaneModalBtn) {
     };
 }
 
+// --- SCHERMO INTERO PER CELLULARI ---
+function requestMobileFullscreen() {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
+    if (isMobile && !document.fullscreenElement) {
+        let docEl = document.documentElement;
+        if (docEl.requestFullscreen) {
+            docEl.requestFullscreen().catch(err => {});
+        } else if (docEl.webkitRequestFullscreen) {
+            docEl.webkitRequestFullscreen();
+        }
+    }
+}
+
 function startGame() {
-    initAudio();
     gameStarted = true;
     gameRunning = true;
     if (startScreen) startScreen.classList.add('hidden');
     if (planeModal) planeModal.classList.add('hidden');
     
+    requestMobileFullscreen();
+
     plane.emoji = PLANES_DATA[selectedPlaneId].emoji;
     plane.x = canvas.width / 2 - plane.width / 2;
     obstacles = [];
     enemyLasers = [];
     particles = [];
-    score = 0;
+    
+    highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
+    score = highScore;
+
     lives = 3;
     gameSpeed = 3;
     survivalTime = 0;
@@ -562,11 +521,9 @@ function updateGame() {
         ) {
             addParticles(plane.x + plane.width / 2, plane.y + plane.height / 2, '#ff1744', 10);
             if (shieldActive) {
-                playSound('shield');
                 shieldActive = false;
             } else {
-                playSound('hit');
-                score = Math.max(0, score - 5);
+                score = Math.max(highScore, score - 5);
                 if (currentScoreEl) currentScoreEl.textContent = score;
             }
             enemyLasers.splice(i, 1);
@@ -585,7 +542,6 @@ function updateGame() {
 
             obs.shootTimer++;
             if (obs.shootTimer > 80) { 
-                playSound('laser');
                 enemyLasers.push({
                     x: obs.x + obs.width / 2 - 3,
                     y: obs.y + obs.height,
@@ -607,44 +563,43 @@ function updateGame() {
             addParticles(obs.x + obs.width / 2, obs.y + obs.height / 2, obs.type === 'bonus' ? '#69f0ae' : '#ff9800', 12);
             if (obs.type === 'lightning') {
                 if (shieldActive) {
-                    playSound('shield');
                     shieldActive = false;
                     obstacles.splice(i, 1);
                 } else {
                     lives--;
                     updateLivesDisplay();
-                    playSound('hit');
                     obstacles.splice(i, 1);
                     if (lives <= 0) {
-                        playSound('gameover');
                         triggerGameOver();
                         return;
                     }
                 }
             } else if (obs.type === 'laserEnemy') {
                 if (shieldActive) {
-                    playSound('shield');
                     shieldActive = false;
                     obstacles.splice(i, 1);
                 } else {
-                    playSound('hit');
-                    score = Math.max(0, score - 5);
+                    score = Math.max(highScore, score - 5);
                     if (currentScoreEl) currentScoreEl.textContent = score;
                     obstacles.splice(i, 1);
                 }
             } else {
+                let gainedPoints = 0;
                 if (obs.type === 'bonus') {
-                    playSound('bonus');
-                    score += doublePointsActive ? obs.points * 2 : obs.points;
+                    gainedPoints = doublePointsActive ? obs.points * 2 : obs.points;
                 } else if (obs.type === 'shield') {
-                    playSound('shield');
                     shieldActive = true;
                     shieldTimer = 300;
                 } else if (obs.type === 'double') {
-                    playSound('bonus');
                     doublePointsActive = true;
                     doublePointsTimer = 480;
                 }
+
+                score += gainedPoints;
+                if (score > highScore) {
+                    highScore = score;
+                }
+
                 if (currentScoreEl) currentScoreEl.textContent = score;
                 obstacles.splice(i, 1);
             }
@@ -653,7 +608,11 @@ function updateGame() {
 
         if (obs.y > canvas.height) {
             if (obs.type === 'lightning') {
-                score += doublePointsActive ? 2 : 1;
+                let gainedPoints = doublePointsActive ? 2 : 1;
+                score += gainedPoints;
+                if (score > highScore) {
+                    highScore = score;
+                }
                 if (currentScoreEl) currentScoreEl.textContent = score;
             }
             obstacles.splice(i, 1);
@@ -666,11 +625,17 @@ function updateGame() {
 
 function triggerGameOver() {
     gameRunning = false;
-    if (finalScoreEl) finalScoreEl.textContent = score;
+    
+    if (score > highScore) {
+        highScore = score;
+    }
+    localStorage.setItem('sky_ace_highscore', highScore);
+
     totalLifetimeScore += score;
     localStorage.setItem('sky_ace_total_score', totalLifetimeScore);
     if (totalScoreHudEl) totalScoreHudEl.textContent = totalLifetimeScore;
 
+    if (finalScoreEl) finalScoreEl.textContent = score;
     if (saveScoreSection) saveScoreSection.classList.remove('hidden'); 
     if (gameOverScreen) gameOverScreen.classList.remove('hidden');    
     fetchLeaderboard(); 
@@ -745,7 +710,6 @@ if (restartBtn) {
     });
 }
 
-// Funzione del tasto "Menu Principale" a fine partita
 if (menuBtn) {
     menuBtn.addEventListener('click', () => {
         if (gameOverScreen) gameOverScreen.classList.add('hidden');
@@ -761,7 +725,6 @@ if (menuBtn) {
     });
 }
 
-// --- CONTROLLO AGGIORNAMENTI ---
 async function checkForUpdates() {
     try {
         let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
@@ -773,8 +736,6 @@ async function checkForUpdates() {
 
         if (onlineVersion !== CURRENT_VERSION && onlineVersion !== lastUpdatedVersion) {
             if (updatePopup) updatePopup.classList.remove('hidden');
-        } else {
-            if (updatePopup) updatePopup.classList.add('hidden');
         }
     } catch (error) {}
 }
@@ -792,16 +753,7 @@ if (updateActionBtn) {
         window.location.href = window.location.pathname + '?v=' + new Date().getTime();
     });
 }
-// Registrazione del Service Worker alla fine del file script.js
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then((reg) => console.log('Service Worker registrato con successo:', reg.scope))
-      .catch((err) => console.log('Registrazione Service Worker fallita:', err));
-  });
-}
 
-checkForUpdates();
+// Avvio del disegno iniziale del gioco
 draw();
-checkForUpdates();
-draw();
+checkForUpdates().catch(err => console.log("Controllo aggiornamenti non disponibile."));
