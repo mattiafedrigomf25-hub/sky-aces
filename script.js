@@ -23,7 +23,7 @@ const updatePopup = document.getElementById('update-popup');
 const updateActionBtn = document.getElementById('update-action-btn');
 
 // Versione attuale del gioco
-const CURRENT_VERSION = "1.8"; 
+const CURRENT_VERSION = "2.0"; 
 
 // Credenziali Cloud jsonbin.io
 const BIN_ID = '6ac4b87cffd5d1605351f58d';
