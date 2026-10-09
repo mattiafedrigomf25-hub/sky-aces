@@ -13,7 +13,7 @@ const menuBtn = document.getElementById('menu-btn');
 const leaderboardList = document.getElementById('leaderboard-list');
 const saveScoreSection = document.getElementById('save-score-section');
 
-// Nuovi elementi per Pausa e Ricomincia
+// Elementi Pausa e Ricomincia
 const pauseBtn = document.getElementById('pause-btn');
 const pausePopup = document.getElementById('pause-popup');
 const resumeBtn = document.getElementById('resume-btn');
@@ -34,7 +34,7 @@ const planeGrid = document.getElementById('plane-grid');
 const updatePopup = document.getElementById('update-popup');
 const updateActionBtn = document.getElementById('update-action-btn');
 
-const CURRENT_VERSION = "2.1"; 
+const CURRENT_VERSION = "2.2"; 
 const BIN_ID = '6ac4b87cffd5d1605351f58d';
 const MASTER_KEY = '$2a$10$aplyk/beh6fEjv43q.yWK.yNbASVpWB2lHxQ8.O3c9aj0.zzW4Kuu';
 
@@ -108,7 +108,7 @@ let keys = { ArrowLeft: false, ArrowRight: false };
 window.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft') keys.ArrowLeft = true;
     if (e.key === 'ArrowRight') keys.ArrowRight = true;
-    if (e.key === ' ' && !gameStarted && planeModal && planeModal.classList.contains('hidden') && pausePopup.classList.contains('hidden') && restartConfirmPopup.classList.contains('hidden')) {
+    if (e.key === ' ' && !gameStarted && planeModal.classList.contains('hidden') && pausePopup.classList.contains('hidden') && restartConfirmPopup.classList.contains('hidden')) {
         e.preventDefault();
         startGame();
     }
@@ -122,7 +122,7 @@ window.addEventListener('keyup', (e) => {
 // --- GESTIONE PAUSA ---
 if (pauseBtn) {
     pauseBtn.addEventListener('click', () => {
-        if (!gameStarted || !gameRunning) return;
+        if (!gameStarted) return;
         gamePaused = true;
         if (pausePopup) pausePopup.classList.remove('hidden');
     });
@@ -274,7 +274,7 @@ function renderPlaneGrid() {
             slot.classList.add('unlockable');
             slot.innerHTML = `
                 <div class="plane-emoji">${p.emoji}</div>
-                <div class="plane-info" style="color: #ff9800; font-weight: bold;">CLICCA PER RISCATTARE!</div>
+                <div class="plane-info" style="color: #ff9800; font-weight: bold;">RISCATTA!</div>
             `;
             slot.onclick = () => {
                 unlockedPlanes.push(p.id);
@@ -285,7 +285,7 @@ function renderPlaneGrid() {
             slot.classList.add('locked');
             slot.innerHTML = `
                 <div class="plane-emoji">🔒</div>
-                <div class="plane-info">${p.name}<br>Richiede ${p.points} pt tot</div>
+                <div class="plane-info">${p.name}<br>Req: ${p.points}pt</div>
             `;
         }
         planeGrid.appendChild(slot);
@@ -300,8 +300,8 @@ if (openPlaneModalBtn) {
             totalScoreDisplay = document.createElement('p');
             totalScoreDisplay.id = 'total-score-display';
             totalScoreDisplay.style.color = '#ffd54f';
-            totalScoreDisplay.style.fontSize = '15px';
-            totalScoreDisplay.style.margin = '5px 0 15px 0';
+            totalScoreDisplay.style.fontSize = '14px';
+            totalScoreDisplay.style.margin = '4px 0 10px 0';
             totalScoreDisplay.style.fontWeight = 'bold';
             let modalTitle = planeModal.querySelector('h2');
             if (modalTitle) modalTitle.after(totalScoreDisplay);
@@ -739,4 +739,3 @@ if (updateActionBtn) {
 
 draw();
 checkForUpdates().catch(err => console.log("Controllo aggiornamenti non disponibile."));
-Copia questi codici nei tuoi file e provalo subito: adesso hai il titolo grande in alto, il tasto pausa perfettamente funzionante e il tasto per ricominciare con la richiesta di conferma!
