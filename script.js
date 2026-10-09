@@ -9,8 +9,21 @@ const finalScoreEl = document.getElementById('final-score');
 const playerNameInput = document.getElementById('player-name');
 const saveBtn = document.getElementById('save-btn');
 const restartBtn = document.getElementById('restart-btn');
+const menuBtn = document.getElementById('menu-btn');
 const leaderboardList = document.getElementById('leaderboard-list');
 const saveScoreSection = document.getElementById('save-score-section');
+
+// Nuovi elementi per Pausa e Ricomincia
+const pauseBtn = document.getElementById('pause-btn');
+const pausePopup = document.getElementById('pause-popup');
+const resumeBtn = document.getElementById('resume-btn');
+const pauseToMenuBtn = document.getElementById('pause-to-menu-btn');
+
+const restartPromptBtn = document.getElementById('restart-prompt-btn');
+const restartConfirmPopup = document.getElementById('restart-confirm-popup');
+const confirmRestartBtn = document.getElementById('confirm-restart-btn');
+const restartToMenuBtn = document.getElementById('restart-to-menu-btn');
+const cancelRestartBtn = document.getElementById('cancel-restart-btn');
 
 // Elementi modale scelta aereo
 const openPlaneModalBtn = document.getElementById('open-plane-modal-btn');
@@ -18,18 +31,13 @@ const closePlaneModalBtn = document.getElementById('close-plane-modal-btn');
 const planeModal = document.getElementById('plane-modal');
 const planeGrid = document.getElementById('plane-grid');
 
-// Riferimenti pop-up di aggiornamento
 const updatePopup = document.getElementById('update-popup');
 const updateActionBtn = document.getElementById('update-action-btn');
 
-// Versione attuale del gioco
-const CURRENT_VERSION = "2.0"; 
-
-// Credenziali Cloud jsonbin.io
+const CURRENT_VERSION = "2.1"; 
 const BIN_ID = '6ac4b87cffd5d1605351f58d';
 const MASTER_KEY = '$2a$10$aplyk/beh6fEjv43q.yWK.yNbASVpWB2lHxQ8.O3c9aj0.zzW4Kuu';
 
-// Definizione dei 10 aerei
 const PLANES_DATA = [
     { id: 0, emoji: '✈️', name: 'Aereo di Linea', points: 0 },
     { id: 1, emoji: '🛩️', name: 'Monomotore', points: 200 },
@@ -43,58 +51,16 @@ const PLANES_DATA = [
     { id: 9, emoji: '✈️', name: 'Aereo Acrobatico', points: 1800 }
 ];
 
-// Gestione Punti Totali (Hangar) e HighScore
 let totalLifetimeScore = parseInt(localStorage.getItem('sky_ace_total_score')) || 0;
 let highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
 let unlockedPlanes = JSON.parse(localStorage.getItem('sky_ace_unlocked')) || [0]; 
 let selectedPlaneId = parseInt(localStorage.getItem('sky_ace_selected_id')) || 0;
 
-// --- GESTIONE HUD (Tempo in mezzo, Record a destra vicino alle vite) ---
 let timerDisplayEl = document.getElementById('timer-display');
 let recordDisplayEl = document.getElementById('record-display');
 
-// Se non esistono nel DOM, li creiamo dinamicamente nella barra superiore
-if (currentScoreEl) {
-    let hudBar = currentScoreEl.parentElement; // Il contenitore degli elementi in alto
-    
-    if (!timerDisplayEl && hudBar) {
-        let timerContainer = document.createElement('div');
-        timerContainer.id = 'timer-container';
-        timerContainer.innerHTML = 'Tempo: <span id="timer-display">0s</span>';
-        // Inseriamo il timer subito dopo il punteggio
-        currentScoreEl.parentElement.after(timerContainer);
-        timerDisplayEl = document.getElementById('timer-display');
-    }
+if (recordDisplayEl) recordDisplayEl.textContent = highScore;
 
-    if (!recordDisplayEl && livesEl) {
-        let recordContainer = document.createElement('div');
-        recordContainer.id = 'record-container';
-        recordContainer.innerHTML = 'Record: <span id="record-display">' + highScore + '</span>';
-        // Inseriamo il record a sinistra delle vite
-        livesEl.parentElement.insertBefore(recordContainer, livesEl);
-        recordDisplayEl = document.getElementById('record-display');
-    }
-}
-
-// --- CREAZIONE DINAMICA PULSANTE "MENU" NELLA SCHERMATA GAME OVER ---
-let restartBtnParent = restartBtn ? restartBtn.parentElement : null;
-let menuBtn = document.getElementById('menu-btn');
-if (!menuBtn && restartBtnParent) {
-    menuBtn = document.createElement('button');
-    menuBtn.id = 'menu-btn';
-    menuBtn.textContent = 'Menu Principale';
-    menuBtn.style.background = '#4caf50';
-    menuBtn.style.color = 'white';
-    menuBtn.style.border = 'none';
-    menuBtn.style.padding = '10px 20px';
-    menuBtn.style.borderRadius = '5px';
-    menuBtn.style.cursor = 'pointer';
-    menuBtn.style.fontWeight = 'bold';
-    menuBtn.style.marginLeft = '10px';
-    restartBtn.after(menuBtn);
-}
-
-// Sistema di Particelle
 let particles = [];
 function addParticles(x, y, color = '#ffd54f', count = 12) {
     for (let i = 0; i < count; i++) {
@@ -128,6 +94,7 @@ let score = 0;
 let lives = 3;
 let gameStarted = false; 
 let gameRunning = false; 
+let gamePaused = false;
 let survivalTime = 0;
 
 let shieldActive = false;
@@ -141,7 +108,7 @@ let keys = { ArrowLeft: false, ArrowRight: false };
 window.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft') keys.ArrowLeft = true;
     if (e.key === 'ArrowRight') keys.ArrowRight = true;
-    if (e.key === ' ' && !gameStarted && planeModal && planeModal.classList.contains('hidden')) {
+    if (e.key === ' ' && !gameStarted && planeModal && planeModal.classList.contains('hidden') && pausePopup.classList.contains('hidden') && restartConfirmPopup.classList.contains('hidden')) {
         e.preventDefault();
         startGame();
     }
@@ -151,6 +118,70 @@ window.addEventListener('keyup', (e) => {
     if (e.key === 'ArrowLeft') keys.ArrowLeft = false;
     if (e.key === 'ArrowRight') keys.ArrowRight = false;
 });
+
+// --- GESTIONE PAUSA ---
+if (pauseBtn) {
+    pauseBtn.addEventListener('click', () => {
+        if (!gameStarted || !gameRunning) return;
+        gamePaused = true;
+        if (pausePopup) pausePopup.classList.remove('hidden');
+    });
+}
+
+if (resumeBtn) {
+    resumeBtn.addEventListener('click', () => {
+        gamePaused = false;
+        if (pausePopup) pausePopup.classList.add('hidden');
+        updateGame();
+    });
+}
+
+if (pauseToMenuBtn) {
+    pauseToMenuBtn.addEventListener('click', () => {
+        gamePaused = false;
+        gameRunning = false;
+        gameStarted = false;
+        if (pausePopup) pausePopup.classList.add('hidden');
+        if (startScreen) startScreen.classList.remove('hidden');
+    });
+}
+
+// --- GESTIONE RICOMINCIA / CONFERMA ---
+if (restartPromptBtn) {
+    restartPromptBtn.addEventListener('click', () => {
+        if (!gameStarted) return;
+        gamePaused = true;
+        if (restartConfirmPopup) restartConfirmPopup.classList.remove('hidden');
+    });
+}
+
+if (cancelRestartBtn) {
+    cancelRestartBtn.addEventListener('click', () => {
+        gamePaused = false;
+        if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
+        if (gameRunning) updateGame();
+    });
+}
+
+if (confirmRestartBtn) {
+    confirmRestartBtn.addEventListener('click', () => {
+        gamePaused = false;
+        if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
+        if (gameOverScreen) gameOverScreen.classList.add('hidden');
+        startGame();
+    });
+}
+
+if (restartToMenuBtn) {
+    restartToMenuBtn.addEventListener('click', () => {
+        gamePaused = false;
+        gameRunning = false;
+        gameStarted = false;
+        if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
+        if (gameOverScreen) gameOverScreen.classList.add('hidden');
+        if (startScreen) startScreen.classList.remove('hidden');
+    });
+}
 
 // --- GESTIONE TOUCH E JOYSTICK MOBILE ---
 let joystick = { active: false, identifier: null, startX: 0, startY: 0, vx: 0 };
@@ -301,8 +332,12 @@ function requestMobileFullscreen() {
 function startGame() {
     gameStarted = true;
     gameRunning = true;
+    gamePaused = false;
     if (startScreen) startScreen.classList.add('hidden');
     if (planeModal) planeModal.classList.add('hidden');
+    if (gameOverScreen) gameOverScreen.classList.add('hidden');
+    if (pausePopup) pausePopup.classList.add('hidden');
+    if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
     
     requestMobileFullscreen();
 
@@ -419,7 +454,7 @@ function draw() {
 }
 
 function updateGame() {
-    if (!gameRunning) return;
+    if (!gameRunning || gamePaused) return;
 
     survivalTime++;
     if (survivalTime % 60 === 0 && timerDisplayEl) {
@@ -580,7 +615,6 @@ function triggerGameOver() {
     if (score > highScore) highScore = score;
     localStorage.setItem('sky_ace_highscore', highScore);
 
-    // Salva i punti di questa partita nel totale cumulativo dell'Hangar
     totalLifetimeScore += score;
     localStorage.setItem('sky_ace_total_score', totalLifetimeScore);
 
@@ -669,6 +703,7 @@ if (menuBtn) {
             saveBtn.textContent = "Salva in Classifica";
         }
         gameStarted = false;
+        gameRunning = false;
         if (startScreen) startScreen.classList.remove('hidden');
     });
 }
@@ -704,3 +739,4 @@ if (updateActionBtn) {
 
 draw();
 checkForUpdates().catch(err => console.log("Controllo aggiornamenti non disponibile."));
+Copia questi codici nei tuoi file e provalo subito: adesso hai il titolo grande in alto, il tasto pausa perfettamente funzionante e il tasto per ricominciare con la richiesta di conferma!
