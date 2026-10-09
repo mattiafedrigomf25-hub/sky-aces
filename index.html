@@ -18,9 +18,10 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             min-height: 100vh;
             margin: 0;
+            padding-top: 5px;
             overflow: auto;
             touch-action: manipulation;
         }
@@ -35,25 +36,41 @@
         }
 
         h1 {
-            margin: 5px 0;
+            margin: 2px 0 6px 0;
             color: #333;
-            font-size: 22px;
+            font-size: 28px; /* Titolo più grande */
+            font-weight: 800;
+            letter-spacing: 1px;
         }
 
         .score-board {
-            margin-bottom: 8px;
-            font-size: 15px;
+            margin-bottom: 6px;
+            font-size: 14px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 5px;
+            padding: 0 2px;
             color: #333;
             font-weight: bold;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         #lives-display {
-            font-size: 15px;
-            letter-spacing: 1px;
+            font-size: 14px;
+            letter-spacing: 0px;
+        }
+
+        /* Pulsanti rapidi nella barra di gioco (Pausa / Ricomincia) */
+        .game-top-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .game-top-actions button {
+            padding: 4px 8px;
+            font-size: 12px;
+            background-color: #512da8;
         }
 
         /* Wrapper principale che contiene sia il canvas che i menu sovrapposti */
@@ -122,21 +139,20 @@
             margin-top: 10px !important;
         }
 
-        /* Versione software in basso nella schermata d'avvio */
         .version-info {
             font-size: 11px;
             color: #8c7ae6;
             margin-top: 15px;
         }
 
-        /* Modale Selezione Aerei (10 aerei) */
-        .modal {
+        /* Modali e Pop-up di Gioco (Pausa, Conferma Riavvio, Game Over) */
+        .modal, #pause-popup, #restart-confirm-popup, #game-over-screen, #update-popup, #start-screen {
             position: absolute;
             top: 4px;
             left: 4px;
             right: 4px;
             bottom: 4px;
-            background-color: rgba(26, 11, 75, 0.98);
+            background-color: rgba(26, 11, 75, 0.96);
             border-radius: 8px;
             display: flex;
             flex-direction: column;
@@ -152,10 +168,22 @@
             text-align: center;
         }
 
-        .modal-content h2 {
+        .modal-content h2, #pause-popup h2, #restart-confirm-popup h2 {
             color: #ffd54f;
-            font-size: 20px;
-            margin-bottom: 12px;
+            font-size: 22px;
+            margin-bottom: 15px;
+        }
+
+        #pause-popup p, #restart-confirm-popup p {
+            font-size: 14px;
+            margin-bottom: 20px;
+            color: #ddd;
+        }
+
+        .popup-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
         }
 
         .plane-grid {
@@ -216,22 +244,8 @@
             100% { background-color: rgba(255, 152, 0, 0.6); transform: scale(1.03); }
         }
 
-        /* Schermata Game Over */
         #game-over-screen {
-            position: absolute;
-            top: 4px;  
-            left: 4px;  
-            right: 4px;
-            bottom: 4px;
-            background-color: rgba(26, 11, 75, 0.95);
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: flex-start;
-            padding: 15px;
-            box-sizing: border-box;
-            z-index: 10;
         }
 
         #game-over-screen h2 {
@@ -314,19 +328,7 @@
 
         /* Pop-up di Aggiornamento */
         #update-popup {
-            position: absolute;
-            top: 4px;  
-            left: 4px;  
-            right: 4px;
-            bottom: 4px;
             background-color: rgba(13, 2, 33, 0.98);
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            box-sizing: border-box;
             z-index: 20;
             text-align: center;
         }
@@ -347,18 +349,6 @@
             color: #ffd54f;
             font-size: 12px !important;
             margin-bottom: 20px !important;
-        }
-
-        #update-btn {
-            background-color: #69f0ae;
-            color: #1a0b4b;
-            font-weight: bold;
-            padding: 10px 20px;
-            font-size: 15px;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(105, 240, 174, 0.4);
         }
 
         /* Controlli Mobile a Schermo */
@@ -430,20 +420,26 @@
 
     <div class="game-container">
         <h1>Sky Ace</h1>
-        <!-- BARRA SUPERIORE AGGIORNATA -->
+        <!-- BARRA SUPERIORE -->
         <div class="score-board">
             <div>Punti: <strong id="current-score">0</strong></div>
             <div id="timer-container">Tempo: <span id="timer-display">0s</span></div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-                <span id="record-container">Record: <span id="record-display">0</span></span>
+            <div style="display: flex; align-items: center; gap: 4px;">
+                <span id="record-container">Rec: <span id="record-display">0</span></span>
                 <span id="lives-display">❤❤❤</span>
             </div>
+        </div>
+        
+        <!-- Pulsanti di Controllo Rapido (Pausa e Ricomincia) -->
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; padding: 0 2px;">
+            <button id="pause-btn" style="background: #ff9800; font-size:11px; padding:3px 8px;">⏸️ Pausa</button>
+            <button id="restart-prompt-btn" style="background: #e53935; font-size:11px; padding:3px 8px;">🔄 Ricomincia</button>
         </div>
 
         <div class="canvas-wrapper">
             <canvas id="gameCanvas" width="400" height="600"></canvas>
 
-            <!-- Schermata di Avvio con Versione Software -->
+            <!-- Schermata di Avvio -->
             <div id="start-screen">
                 <h2>SKY ACE</h2>
                 <p>Schiva i fulmini, abbatti i caccia nemici e raccogli i bonus per sopravvivere!</p>
@@ -452,15 +448,36 @@
                 </div>
                 <button id="start-btn" class="btn">AVVIA VOLO</button>
                 <p class="start-hint">Usa le frecce ⬅️ ➡️ o il touch per guidare</p>
-                <div class="version-info">Versione 2.0</div>
+                <div class="version-info">Versione 2.1</div>
             </div>
 
-            <!-- Modale Hangar (10 Aerei) -->
+            <!-- Modale Hangar -->
             <div id="plane-modal" class="modal hidden">
                 <div class="modal-content">
                     <h2>HANGAR VELIVOLI</h2>
                     <div id="plane-grid" class="plane-grid"></div>
                     <button id="close-plane-modal-btn" style="background-color: #512da8;">Chiudi Hangar</button>
+                </div>
+            </div>
+
+            <!-- Pop-up di Pausa -->
+            <div id="pause-popup" class="hidden">
+                <h2>GIOCO IN PAUSA</h2>
+                <p>Prenditi tutto il tempo che ti serve.</p>
+                <div class="popup-buttons">
+                    <button id="resume-btn" style="background-color: #4caf50;">Riprendi</button>
+                    <button id="pause-to-menu-btn" style="background-color: #512da8;">Torna al Menu</button>
+                </div>
+            </div>
+
+            <!-- Pop-up di Conferma Ricomincia -->
+            <div id="restart-confirm-popup" class="hidden">
+                <h2>ATTENZIONE</h2>
+                <p>Vuoi davvero ricominciare la partita o tornare al menu?</p>
+                <div class="popup-buttons" style="flex-direction: column; gap: 8px;">
+                    <button id="confirm-restart-btn" style="background-color: #e53935;">Ricomincia Partita</button>
+                    <button id="restart-to-menu-btn" style="background-color: #512da8;">Torna al Menu</button>
+                    <button id="cancel-restart-btn" style="background-color: #757575; margin-top: 5px;">Annulla</button>
                 </div>
             </div>
 
@@ -476,10 +493,13 @@
                     <h3>Classifica Assi</h3>
                     <ul id="leaderboard-list"></ul>
                 </div>
-                <button id="restart-btn" style="background-color: #ff5252; margin-top: 5px;">Riprova</button>
+                <div style="display: flex; gap: 8px; margin-top: 5px;">
+                    <button id="restart-btn" style="background-color: #ff5252;">Riprova</button>
+                    <button id="menu-btn" style="background-color: #4caf50;">Menu Principale</button>
+                </div>
             </div>
 
-            <!-- Pop-up di Aggiornamento In Primo Piano -->
+            <!-- Pop-up di Aggiornamento -->
             <div id="update-popup" class="hidden">
                 <h2>🚀 NUOVA VERSIONE DISPONIBILE!</h2>
                 <p>È stato rilasciato un aggiornamento importante per <strong>Sky Ace</strong>.</p>
@@ -501,38 +521,15 @@
     </div>
 
     <script src="script.js"></script>
-
-    <!-- Script di Registrazione Service Worker per la PWA -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(registration => {
-                        console.log('ServiceWorker registrato con successo:', registration.scope);
-                        
-                        registration.onupdatefound = () => {
-                            const installingWorker = registration.installing;
-                            installingWorker.onstatechange = () => {
-                                if (installingWorker.state === 'installed') {
-                                    if (navigator.serviceWorker.controller) {
-                                        const updatePopup = document.getElementById('update-popup');
-                                        if (updatePopup) updatePopup.classList.remove('hidden');
-                                    }
-                                }
-                            };
-                        };
-                    })
-                    .catch(error => {
-                        console.log('Registrazione ServiceWorker fallita:', error);
-                    });
+                navigator.serviceWorker.register('sw.js').catch(error => {});
             });
         }
-
         const updateActionBtn = document.getElementById('update-action-btn');
         if (updateActionBtn) {
-            updateActionBtn.addEventListener('click', () => {
-                window.location.reload();
-            });
+            updateActionBtn.addEventListener('click', () => { window.location.reload(); });
         }
     </script>
 </body>
