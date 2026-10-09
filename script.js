@@ -38,13 +38,13 @@ const changelogList = document.getElementById('changelog-list');
 const changelogTitle = document.getElementById('changelog-title');
 const currentVersionLabel = document.getElementById('current-version-label');
 
-// Versione attualmente in esecuzione sul browser dell'utente
-const LOCAL_INSTALLED_VERSION = localStorage.getItem('sky_ace_installed_version') || "2.0";
+// Versione installata sul browser (default 2.3)
+const LOCAL_INSTALLED_VERSION = localStorage.getItem('sky_ace_installed_version') || "2.3";
 if (currentVersionLabel) currentVersionLabel.textContent = LOCAL_INSTALLED_VERSION;
 
-// Se l'utente ha già fatto l'aggiornamento, mostriamo i bottoni in-game
-if (localStorage.getItem('sky_ace_installed_version')) {
-    if (inGameButtons) inGameButtons.style.display = 'flex';
+// Mostra i bottoni in-game solo se l'utente ha già effettuato l'aggiornamento
+if (localStorage.getItem('sky_ace_installed_version') && inGameButtons) {
+    inGameButtons.style.display = 'flex';
 }
 
 const BIN_ID = '6ac4b87cffd5d1605351f58d';
@@ -679,7 +679,11 @@ if (saveBtn) {
                     'Content-Type': 'application/json',
                     'X-Master-Key': MASTER_KEY
                 },
-                body: JSON.stringify({ scores: scores, latestVersion: CURRENT_VERSION })
+                body: JSON.stringify({ 
+                    scores: scores, 
+                    latestVersion: "2.4", 
+                    changelog: data.record.changelog || [] 
+                })
             });
 
             if (saveScoreSection) saveScoreSection.classList.add("hidden"); 
@@ -719,17 +723,15 @@ if (menuBtn) {
     });
 }
 
-// --- CONTROLLO AGGIORNAMENTI E CHANGELOG DINAMICO ---
-const LATEST_CODE_VERSION = "2.4"; // <-- MODIFICA QUESTO NUMERO QUANDO FAI UN NUOVO AGGIORNAMENTO!
-
+// --- CONTROLLO AGGIORNAMENTI DINAMICO DA CLOUD ---
 async function checkForUpdates() {
     try {
         let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
             headers: { 'X-Master-Key': MASTER_KEY }
         });
         let data = await response.json();
-        let onlineVersion = data.record.latestVersion || "2.0";
-        let changelogItems = data.record.changelog || ["Aggiornamenti generali e miglioramenti di gioco."];
+        let onlineVersion = data.record.latestVersion || "2.3";
+        let changelogItems = data.record.changelog || ["Aggiornamenti generali."];
 
         if (onlineVersion !== LOCAL_INSTALLED_VERSION) {
             if (changelogTitle) changelogTitle.textContent = `Novità della versione ${onlineVersion}:`;
@@ -755,12 +757,12 @@ if (updateActionBtn) {
                 headers: { 'X-Master-Key': MASTER_KEY }
             });
             let data = await response.json();
-            let onlineVersion = data.record.latestVersion || LATEST_CODE_VERSION;
+            let onlineVersion = data.record.latestVersion;
             
-            // Salviamo che l'utente ha installato l'ultima versione
+            // Registriamo sul browser che l'utente ha aggiornato all'ultima versione online
             localStorage.setItem('sky_ace_installed_version', onlineVersion);
         } catch(e) {
-            localStorage.setItem('sky_ace_installed_version', LATEST_CODE_VERSION);
+            localStorage.setItem('sky_ace_installed_version', "2.4");
         }
         window.location.reload();
     });
