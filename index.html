@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sky Ace - Arcade Flight</title>
-    <!-- Collegamento al Manifest della PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1a0b4b">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -38,7 +37,7 @@
         h1 {
             margin: 2px 0 6px 0;
             color: #333;
-            font-size: 28px; /* Titolo più grande */
+            font-size: 28px;
             font-weight: 800;
             letter-spacing: 1px;
         }
@@ -61,19 +60,6 @@
             letter-spacing: 0px;
         }
 
-        /* Pulsanti rapidi nella barra di gioco (Pausa / Ricomincia) */
-        .game-top-actions {
-            display: flex;
-            gap: 5px;
-        }
-
-        .game-top-actions button {
-            padding: 4px 8px;
-            font-size: 12px;
-            background-color: #512da8;
-        }
-
-        /* Wrapper principale che contiene sia il canvas che i menu sovrapposti */
         .canvas-wrapper {
             position: relative;
             width: 100%;
@@ -99,57 +85,11 @@
             display: none !important;
         }
 
-        /* Schermata di Avvio (Start Screen) */
-        #start-screen {
+        /* Schermate e Pop-up generali sovrapposti al canvas */
+        #start-screen, .modal, #pause-popup, #restart-confirm-popup, #game-over-screen, #update-popup {
             position: absolute;
             top: 4px;  
             left: 4px;  
-            right: 4px;
-            bottom: 4px;
-            background-color: rgba(26, 11, 75, 0.95);
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 15px;
-            box-sizing: border-box;
-            z-index: 10;
-        }
-
-        #start-screen h2 {
-            color: #ffd54f;
-            font-size: 26px;
-            margin-bottom: 10px;
-        }
-
-        #start-screen p {
-            font-size: 13px;
-            margin: 6px 0;
-            line-height: 1.3;
-        }
-
-        .plane-selection {
-            margin: 15px 0;
-        }
-
-        .start-hint {
-            font-size: 12px !important;
-            color: #b39ddb;
-            margin-top: 10px !important;
-        }
-
-        .version-info {
-            font-size: 11px;
-            color: #8c7ae6;
-            margin-top: 15px;
-        }
-
-        /* Modali e Pop-up di Gioco (Pausa, Conferma Riavvio, Game Over) */
-        .modal, #pause-popup, #restart-confirm-popup, #game-over-screen, #update-popup, #start-screen {
-            position: absolute;
-            top: 4px;
-            left: 4px;
             right: 4px;
             bottom: 4px;
             background-color: rgba(26, 11, 75, 0.96);
@@ -160,40 +100,39 @@
             justify-content: center;
             padding: 15px;
             box-sizing: border-box;
-            z-index: 15;
+            z-index: 20;
         }
 
-        .modal-content {
-            width: 100%;
-            text-align: center;
-        }
-
-        .modal-content h2, #pause-popup h2, #restart-confirm-popup h2 {
+        #start-screen h2, .modal h2, #pause-popup h2, #restart-confirm-popup h2, #game-over-screen h2 {
             color: #ffd54f;
-            font-size: 22px;
-            margin-bottom: 15px;
+            font-size: 24px;
+            margin-bottom: 10px;
         }
 
         #pause-popup p, #restart-confirm-popup p {
             font-size: 14px;
             margin-bottom: 20px;
             color: #ddd;
+            text-align: center;
         }
 
         .popup-buttons {
             display: flex;
+            flex-direction: column;
             gap: 10px;
-            justify-content: center;
+            width: 100%;
+            max-width: 240px;
         }
 
         .plane-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 8px;
-            max-height: 300px;
+            max-height: 280px;
             overflow-y: auto;
             margin-bottom: 15px;
             padding: 5px;
+            width: 100%;
         }
 
         .plane-slot {
@@ -202,7 +141,6 @@
             border-radius: 8px;
             padding: 8px;
             cursor: pointer;
-            transition: 0.2s;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -219,39 +157,14 @@
             color: #b39ddb;
         }
 
-        .plane-slot.locked {
-            opacity: 0.5;
-            cursor: not-allowed;
-            border-color: #444;
-        }
-
-        .plane-slot.unlocked {
-            border-color: #ab47bc;
-        }
-
-        .plane-slot.selected {
-            border-color: #69f0ae;
-            background: rgba(105, 240, 174, 0.15);
-        }
-
-        .plane-slot.unlockable {
-            border-color: #ff9800;
-            animation: blink 0.8s infinite alternate;
-        }
-
-        @keyframes blink {
-            0% { background-color: rgba(255, 152, 0, 0.2); transform: scale(1); }
-            100% { background-color: rgba(255, 152, 0, 0.6); transform: scale(1.03); }
-        }
+        .plane-slot.locked { opacity: 0.5; border-color: #444; }
+        .plane-slot.unlocked { border-color: #ab47bc; }
+        .plane-slot.selected { border-color: #69f0ae; background: rgba(105, 240, 174, 0.15); }
+        .plane-slot.unlockable { border-color: #ff9800; }
 
         #game-over-screen {
             justify-content: flex-start;
-        }
-
-        #game-over-screen h2 {
-            color: #ffd54f;
-            margin: 5px 0;
-            font-size: 22px;
+            padding-top: 25px;
         }
 
         #game-over-screen p {
@@ -273,11 +186,11 @@
         }
 
         button {
-            padding: 8px 16px;
+            padding: 10px 16px;
             background-color: #29b6f6;
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             font-weight: bold;
             cursor: pointer;
             font-size: 14px;
@@ -289,7 +202,7 @@
 
         #leaderboard-container {
             width: 100%;
-            max-height: 140px;
+            max-height: 130px;
             overflow-y: auto;
             margin: 6px 0;
             background: rgba(0, 0, 0, 0.3);
@@ -323,35 +236,15 @@
             background-color: rgba(255, 213, 79, 0.3);
             color: #ffd54f;
             font-weight: bold;
-            border-radius: 4px;
         }
 
-        /* Pop-up di Aggiornamento */
         #update-popup {
             background-color: rgba(13, 2, 33, 0.98);
-            z-index: 20;
+            z-index: 30;
             text-align: center;
         }
 
-        #update-popup h2 {
-            color: #69f0ae;
-            font-size: 22px;
-            margin-bottom: 12px;
-        }
-
-        #update-popup p {
-            font-size: 13px;
-            margin: 6px 0;
-            line-height: 1.4;
-        }
-
-        .update-sub {
-            color: #ffd54f;
-            font-size: 12px !important;
-            margin-bottom: 20px !important;
-        }
-
-        /* Controlli Mobile a Schermo */
+        /* Controlli Mobile */
         #mobile-controls {
             position: absolute;
             bottom: 10px;
@@ -361,7 +254,7 @@
             justify-content: space-between;
             padding: 0 15px;
             box-sizing: border-box;
-            z-index: 9;
+            z-index: 10;
             pointer-events: none;
         }
 
@@ -376,7 +269,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            backdrop-filter: blur(4px);
         }
 
         #joystickKnob {
@@ -385,7 +277,6 @@
             height: 30px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.8);
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
         }
 
         .mobile-action-btns {
@@ -397,7 +288,6 @@
 
         .mobile-action-btns button {
             padding: 10px 12px;
-            font-size: 14px;
             background: rgba(255, 255, 255, 0.2);
             border: 2px solid #fff;
             color: #fff;
@@ -420,7 +310,7 @@
 
     <div class="game-container">
         <h1>Sky Ace</h1>
-        <!-- BARRA SUPERIORE -->
+        
         <div class="score-board">
             <div>Punti: <strong id="current-score">0</strong></div>
             <div id="timer-container">Tempo: <span id="timer-display">0s</span></div>
@@ -430,10 +320,10 @@
             </div>
         </div>
         
-        <!-- Pulsanti di Controllo Rapido (Pausa e Ricomincia) -->
+        <!-- Pulsanti Pausa e Ricomincia -->
         <div style="display: flex; justify-content: space-between; margin-bottom: 6px; padding: 0 2px;">
-            <button id="pause-btn" style="background: #ff9800; font-size:11px; padding:3px 8px;">⏸️ Pausa</button>
-            <button id="restart-prompt-btn" style="background: #e53935; font-size:11px; padding:3px 8px;">🔄 Ricomincia</button>
+            <button id="pause-btn" style="background: #ff9800; font-size:12px; padding:4px 10px;">⏸️ Pausa</button>
+            <button id="restart-prompt-btn" style="background: #e53935; font-size:12px; padding:4px 10px;">🔄 Ricomincia</button>
         </div>
 
         <div class="canvas-wrapper">
@@ -442,18 +332,18 @@
             <!-- Schermata di Avvio -->
             <div id="start-screen">
                 <h2>SKY ACE</h2>
-                <p>Schiva i fulmini, abbatti i caccia nemici e raccogli i bonus per sopravvivere!</p>
+                <p>Schiva i fulmini, abbatti i caccia nemici e raccogli i bonus!</p>
                 <div class="plane-selection">
                     <button id="open-plane-modal-btn" style="background-color: #ab47bc;">Hangar Aerei ✈️</button>
                 </div>
-                <button id="start-btn" class="btn">AVVIA VOLO</button>
+                <button id="start-btn" style="background-color: #29b6f6; margin-top: 10px;">AVVIA VOLO</button>
                 <p class="start-hint">Usa le frecce ⬅️ ➡️ o il touch per guidare</p>
-                <div class="version-info">Versione 2.1</div>
+                <div class="version-info">Versione 2.2</div>
             </div>
 
             <!-- Modale Hangar -->
             <div id="plane-modal" class="modal hidden">
-                <div class="modal-content">
+                <div class="modal-content" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
                     <h2>HANGAR VELIVOLI</h2>
                     <div id="plane-grid" class="plane-grid"></div>
                     <button id="close-plane-modal-btn" style="background-color: #512da8;">Chiudi Hangar</button>
@@ -463,7 +353,7 @@
             <!-- Pop-up di Pausa -->
             <div id="pause-popup" class="hidden">
                 <h2>GIOCO IN PAUSA</h2>
-                <p>Prenditi tutto il tempo che ti serve.</p>
+                <p>Il volo è in pausa.</p>
                 <div class="popup-buttons">
                     <button id="resume-btn" style="background-color: #4caf50;">Riprendi</button>
                     <button id="pause-to-menu-btn" style="background-color: #512da8;">Torna al Menu</button>
@@ -474,10 +364,10 @@
             <div id="restart-confirm-popup" class="hidden">
                 <h2>ATTENZIONE</h2>
                 <p>Vuoi davvero ricominciare la partita o tornare al menu?</p>
-                <div class="popup-buttons" style="flex-direction: column; gap: 8px;">
-                    <button id="confirm-restart-btn" style="background-color: #e53935;">Ricomincia Partita</button>
-                    <button id="restart-to-menu-btn" style="background-color: #512da8;">Torna al Menu</button>
-                    <button id="cancel-restart-btn" style="background-color: #757575; margin-top: 5px;">Annulla</button>
+                <div class="popup-buttons">
+                    <button id="confirm-restart-btn" style="background-color: #e53935;">Ricomincia la partita</button>
+                    <button id="restart-to-menu-btn" style="background-color: #512da8;">Torna al menu</button>
+                    <button id="cancel-restart-btn" style="background-color: #757575;">Annulla</button>
                 </div>
             </div>
 
@@ -493,7 +383,7 @@
                     <h3>Classifica Assi</h3>
                     <ul id="leaderboard-list"></ul>
                 </div>
-                <div style="display: flex; gap: 8px; margin-top: 5px;">
+                <div style="display: flex; gap: 8px; margin-top: 5px; width: 100%; justify-content: center;">
                     <button id="restart-btn" style="background-color: #ff5252;">Riprova</button>
                     <button id="menu-btn" style="background-color: #4caf50;">Menu Principale</button>
                 </div>
@@ -501,13 +391,12 @@
 
             <!-- Pop-up di Aggiornamento -->
             <div id="update-popup" class="hidden">
-                <h2>🚀 NUOVA VERSIONE DISPONIBILE!</h2>
-                <p>È stato rilasciato un aggiornamento importante per <strong>Sky Ace</strong>.</p>
-                <p class="update-sub">Aggiorna ora per sincronizzare le ultime modifiche e i dati di volo!</p>
-                <button id="update-action-btn">AGGIORNA ORA</button>
+                <h2>🚀 NUOVA VERSIONE!</h2>
+                <p>È disponibile un aggiornamento importante.</p>
+                <button id="update-action-btn" style="background-color: #69f0ae; color: #1a0b4b;">AGGIORNA</button>
             </div>
 
-            <!-- Controlli Mobile a Schermo -->
+            <!-- Controlli Mobile -->
             <div id="mobile-controls">
                 <div id="virtualJoystick">
                     <div id="joystickKnob"></div>
