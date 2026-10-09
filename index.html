@@ -179,7 +179,7 @@
         #leaderboard-list li { padding: 3px 5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 12px; display: flex; justify-content: space-between; }
         #leaderboard-list li.highlight { background-color: rgba(255, 213, 79, 0.3); color: #ffd54f; font-weight: bold; }
 
-        /* Stile Pop-up Aggiornamento con Lista Novità */
+        /* Stile Pop-up Aggiornamento */
         #update-popup {
             background-color: rgba(13, 2, 33, 0.98);
             z-index: 30;
@@ -236,7 +236,7 @@
             </div>
         </div>
         
-        <!-- Pulsanti Pausa e Ricomincia (Visibili dopo l'aggiornamento) -->
+        <!-- Pulsanti Pausa e Ricomincia (Nascosti finché l'utente non aggiorna) -->
         <div id="in-game-buttons" style="display: none; justify-content: space-between; margin-bottom: 6px; padding: 0 2px;">
             <button id="pause-btn" style="background: #ff9800; font-size:12px; padding:4px 10px;">⏸️ Pausa</button>
             <button id="restart-prompt-btn" style="background: #e53935; font-size:12px; padding:4px 10px;">🔄 Ricomincia</button>
@@ -253,7 +253,7 @@
                 </div>
                 <button id="start-btn" style="background-color: #29b6f6; margin-top: 10px;">AVVIA VOLO</button>
                 <p class="start-hint">Usa le frecce ⬅️ ➡️ o il touch per guidare</p>
-                <div class="version-info">Versione <span id="current-version-label">2.0</span></div>
+                <div class="version-info">Versione <span id="current-version-label">2.3</span></div>
             </div>
 
             <!-- Modale Hangar -->
