@@ -49,7 +49,7 @@ const changelogTitle = document.getElementById('changelog-title');
 const currentVersionLabel = document.getElementById('current-version-label');
 
 // Versione installata sul browser
-const LOCAL_INSTALLED_VERSION = localStorage.getItem('sky_ace_installed_version') || "2.3";
+const LOCAL_INSTALLED_VERSION = localStorage.getItem('sky_ace_installed_version') || "2.6";
 if (currentVersionLabel) currentVersionLabel.textContent = LOCAL_INSTALLED_VERSION;
 
 if (localStorage.getItem('sky_ace_installed_version') && inGameButtons) {
@@ -74,6 +74,13 @@ const PLANES_DATA = [
     { id: 9, emoji: '✈️', name: 'Aereo Acrobatico', points: 1800 }
 ];
 
+// ID Pilota Univoco per la Sincronizzazione Cloud
+let pilotId = localStorage.getItem('sky_ace_pilot_id');
+if (!pilotId) {
+    pilotId = 'PILOT_' + Math.random().toString(36).substring(2, 9).toUpperCase();
+    localStorage.setItem('sky_ace_pilot_id', pilotId);
+}
+
 let totalLifetimeScore = parseInt(localStorage.getItem('sky_ace_total_score')) || 0;
 let highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
 let unlockedPlanes = JSON.parse(localStorage.getItem('sky_ace_unlocked')) || [0]; 
@@ -82,6 +89,71 @@ let selectedPlaneId = parseInt(localStorage.getItem('sky_ace_selected_id')) || 0
 let timerDisplayEl = document.getElementById('timer-display');
 let recordDisplayEl = document.getElementById('record-display');
 if (recordDisplayEl) recordDisplayEl.textContent = highScore;
+
+// --- FUNZIONE PER SALVARE IL PROGRESSO SUL CLOUD (JSONBIN) ---
+async function saveProgressToCloud() {
+    try {
+        let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+            headers: { 'X-Master-Key': MASTER_KEY }
+        });
+        let data = await response.json();
+        let record = data.record;
+        
+        if (!record.players) record.players = {};
+        
+        record.players[pilotId] = {
+            totalScore: totalLifetimeScore,
+            highScore: highScore,
+            unlockedPlanes: unlockedPlanes,
+            selectedPlaneId: selectedPlaneId,
+            lastUpdated: new Date().toISOString()
+        };
+
+        await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Master-Key': MASTER_KEY
+            },
+            body: JSON.stringify(record)
+        });
+    } catch (e) {}
+}
+
+// --- FUNZIONE PER SCARICARE IL PROGRESSO DAL CLOUD ---
+async function loadProgressFromCloud() {
+    try {
+        let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+            headers: { 'X-Master-Key': MASTER_KEY }
+        });
+        let data = await response.json();
+        let players = data.record.players || {};
+
+        if (players[pilotId]) {
+            let pData = players[pilotId];
+            totalLifetimeScore = Math.max(totalLifetimeScore, pData.totalScore || 0);
+            highScore = Math.max(highScore, pData.highScore || 0);
+            
+            if (Array.isArray(pData.unlockedPlanes)) {
+                pData.unlockedPlanes.forEach(id => {
+                    if (!unlockedPlanes.includes(id)) unlockedPlanes.push(id);
+                });
+            }
+            if (pData.selectedPlaneId !== undefined) {
+                selectedPlaneId = pData.selectedPlaneId;
+            }
+
+            // Aggiorna anche il LocalStorage locale
+            localStorage.setItem('sky_ace_total_score', totalLifetimeScore);
+            localStorage.setItem('sky_ace_highscore', highScore);
+            localStorage.setItem('sky_ace_unlocked', JSON.stringify(unlockedPlanes));
+            localStorage.setItem('sky_ace_selected_id', selectedPlaneId);
+
+            if (recordDisplayEl) recordDisplayEl.textContent = highScore;
+            if (plane) plane.emoji = PLANES_DATA[selectedPlaneId].emoji;
+        }
+    } catch (e) {}
+}
 
 let particles = [];
 function addParticles(x, y, color = '#ffd54f', count = 12) {
@@ -141,9 +213,13 @@ window.addEventListener('keyup', (e) => {
     if (e.key === 'ArrowRight') keys.ArrowRight = false;
 });
 
-// --- CARICAMENTO INIZIALE (SPLASH SCREEN) ---
-function runInitialLoading() {
+// --- CARICAMENTO INIZIALE CON SINCRONIZZAZIONE ---
+async function runInitialLoading() {
     let progress = 0;
+    
+    // Scarica prima i dati dal Cloud
+    await loadProgressFromCloud();
+
     let interval = setInterval(() => {
         progress += Math.floor(Math.random() * 12) + 5;
         if (progress >= 100) {
@@ -156,7 +232,7 @@ function runInitialLoading() {
         }
         if (splashProgressBar) splashProgressBar.style.width = progress + '%';
         if (splashProgressText) splashProgressText.textContent = progress + '%';
-    }, 100);
+    }, 80);
 }
 
 // --- FLUSSO AGGIORNAMENTO E DOWNLOAD ---
@@ -175,7 +251,7 @@ if (updateActionBtn) {
                     if (onlineVersionToInstall) {
                         localStorage.setItem('sky_ace_installed_version', onlineVersionToInstall);
                     } else {
-                        localStorage.setItem('sky_ace_installed_version', "2.4");
+                        localStorage.setItem('sky_ace_installed_version', "2.6");
                     }
                     window.location.reload();
                 }, 500);
@@ -250,7 +326,7 @@ if (restartToMenuBtn) {
     });
 }
 
-// --- CONTROLLI MOBILE ISTANTANEI CON POINTER EVENTS OTTIMIZZATI ---
+// --- CONTROLLI MOBILE ISTANTANEI ---
 let joystick = { active: false, identifier: null, startX: 0, startY: 0, vx: 0 };
 const vJoystickEl = document.getElementById('virtualJoystick');
 const knobEl = document.getElementById('joystickKnob');
@@ -336,6 +412,7 @@ function renderPlaneGrid() {
                 selectedPlaneId = p.id;
                 plane.emoji = p.emoji;
                 localStorage.setItem('sky_ace_selected_id', selectedPlaneId);
+                saveProgressToCloud(); // Salva la selezione aereo sul cloud
                 renderPlaneGrid();
             };
         } else if (canUnlock) {
@@ -347,6 +424,7 @@ function renderPlaneGrid() {
             slot.onclick = () => {
                 unlockedPlanes.push(p.id);
                 localStorage.setItem('sky_ace_unlocked', JSON.stringify(unlockedPlanes));
+                saveProgressToCloud(); // Salva lo sblocco aereo sul cloud
                 renderPlaneGrid();
             };
         } else {
@@ -409,7 +487,6 @@ function startGame() {
     
     requestMobileFullscreen();
 
-    // FORZA IL FOCUS IMMEDIATO PER CATTURARE SUBITO I TASTI E IL TOUCH
     window.focus();
     if (canvas && typeof canvas.focus === 'function') {
         canvas.focus();
@@ -430,7 +507,6 @@ function startGame() {
     shieldActive = false;
     doublePointsActive = false;
     
-    // Resetta lo stato dei tasti e del joystick all'avvio per evitare blocchi
     keys.ArrowLeft = false;
     keys.ArrowRight = false;
     joystick.active = false;
@@ -700,6 +776,9 @@ function triggerGameOver() {
     totalLifetimeScore += score;
     localStorage.setItem('sky_ace_total_score', totalLifetimeScore);
 
+    // Salva automaticamente i dati aggiornati sul Cloud
+    saveProgressToCloud();
+
     if (finalScoreEl) finalScoreEl.textContent = score;
     if (saveScoreSection) saveScoreSection.classList.remove('hidden'); 
     if (gameOverScreen) gameOverScreen.classList.remove('hidden');    
@@ -744,17 +823,15 @@ if (saveBtn) {
             let scores = data.record.scores || [];
             scores.push({ name: name, score: score });
 
+            data.record.scores = scores;
+
             await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Master-Key': MASTER_KEY
                 },
-                body: JSON.stringify({ 
-                    scores: scores, 
-                    latestVersion: data.record.latestVersion || "2.5", 
-                    changelog: data.record.changelog || [] 
-                })
+                body: JSON.stringify(data.record)
             });
 
             if (saveScoreSection) saveScoreSection.classList.add("hidden"); 
@@ -801,7 +878,7 @@ async function checkForUpdates() {
             headers: { 'X-Master-Key': MASTER_KEY }
         });
         let data = await response.json();
-        let onlineVersion = data.record.latestVersion || "2.3";
+        let onlineVersion = data.record.latestVersion || "2.6";
         let changelogItems = data.record.changelog || ["Aggiornamenti generali."];
 
         if (onlineVersion !== LOCAL_INSTALLED_VERSION) {
