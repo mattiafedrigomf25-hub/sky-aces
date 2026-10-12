@@ -404,6 +404,12 @@ function startGame() {
     
     requestMobileFullscreen();
 
+    // FORZA IL FOCUS IMMEDIATO PER CATTURARE SUBITO I TASTI E IL TOUCH
+    window.focus();
+    if (canvas && typeof canvas.focus === 'function') {
+        canvas.focus();
+    }
+
     plane.emoji = PLANES_DATA[selectedPlaneId].emoji;
     plane.x = canvas.width / 2 - plane.width / 2;
     obstacles = [];
@@ -419,6 +425,10 @@ function startGame() {
     shieldActive = false;
     doublePointsActive = false;
     
+    // Resetta lo stato dei tasti all'avvio per evitare blocchi
+    keys.ArrowLeft = false;
+    keys.ArrowRight = false;
+
     if (currentScoreEl) currentScoreEl.textContent = score;
     if (timerDisplayEl) timerDisplayEl.textContent = '0s';
     if (recordDisplayEl) recordDisplayEl.textContent = highScore;
@@ -426,7 +436,6 @@ function startGame() {
 
     updateGame();
 }
-
 if (startBtn) {
     startBtn.addEventListener('click', startGame);
 }
