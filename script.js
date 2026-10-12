@@ -250,7 +250,7 @@ if (restartToMenuBtn) {
     });
 }
 
-// --- CONTROLLI MOBILE ISTANTANEI CON POINTER EVENTS ---
+// --- CONTROLLI MOBILE ISTANTANEI CON POINTER EVENTS OTTIMIZZATI ---
 let joystick = { active: false, identifier: null, startX: 0, startY: 0, vx: 0 };
 const vJoystickEl = document.getElementById('virtualJoystick');
 const knobEl = document.getElementById('joystickKnob');
@@ -264,12 +264,12 @@ if (vJoystickEl && knobEl) {
         const rect = vJoystickEl.getBoundingClientRect();
         joystick.startX = rect.left + rect.width / 2;
         updateJoystick(e.clientX);
-    });
+    }, { passive: false });
 
     vJoystickEl.addEventListener('pointermove', (e) => {
         if (!joystick.active || e.pointerId !== joystick.identifier) return;
         updateJoystick(e.clientX);
-    });
+    }, { passive: false });
 
     const stopJoystick = (e) => {
         if (e.pointerId === joystick.identifier) {
@@ -294,14 +294,19 @@ function updateJoystick(clientX) {
 
 const leftBtn = document.getElementById('left-btn');
 const rightBtn = document.getElementById('right-btn');
-if (leftBtn && rightBtn) {
-    leftBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); keys.ArrowLeft = true; });
-    leftBtn.addEventListener('pointerup', (e) => { e.preventDefault(); keys.ArrowLeft = false; });
-    leftBtn.addEventListener('pointerleave', (e) => { e.preventDefault(); keys.ArrowLeft = false; });
 
-    rightBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); keys.ArrowRight = true; });
-    rightBtn.addEventListener('pointerup', (e) => { e.preventDefault(); keys.ArrowRight = false; });
-    rightBtn.addEventListener('pointerleave', (e) => { e.preventDefault(); keys.ArrowRight = false; });
+if (leftBtn) {
+    leftBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); keys.ArrowLeft = true; }, { passive: false });
+    leftBtn.addEventListener('pointerup', (e) => { e.preventDefault(); keys.ArrowLeft = false; }, { passive: false });
+    leftBtn.addEventListener('pointerleave', (e) => { e.preventDefault(); keys.ArrowLeft = false; }, { passive: false });
+    leftBtn.addEventListener('pointercancel', (e) => { e.preventDefault(); keys.ArrowLeft = false; }, { passive: false });
+}
+
+if (rightBtn) {
+    rightBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); keys.ArrowRight = true; }, { passive: false });
+    rightBtn.addEventListener('pointerup', (e) => { e.preventDefault(); keys.ArrowRight = false; }, { passive: false });
+    rightBtn.addEventListener('pointerleave', (e) => { e.preventDefault(); keys.ArrowRight = false; }, { passive: false });
+    rightBtn.addEventListener('pointercancel', (e) => { e.preventDefault(); keys.ArrowRight = false; }, { passive: false });
 }
 
 if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
@@ -425,9 +430,11 @@ function startGame() {
     shieldActive = false;
     doublePointsActive = false;
     
-    // Resetta lo stato dei tasti all'avvio per evitare blocchi
+    // Resetta lo stato dei tasti e del joystick all'avvio per evitare blocchi
     keys.ArrowLeft = false;
     keys.ArrowRight = false;
+    joystick.active = false;
+    joystick.vx = 0;
 
     if (currentScoreEl) currentScoreEl.textContent = score;
     if (timerDisplayEl) timerDisplayEl.textContent = '0s';
@@ -436,6 +443,7 @@ function startGame() {
 
     updateGame();
 }
+
 if (startBtn) {
     startBtn.addEventListener('click', startGame);
 }
@@ -544,7 +552,6 @@ function updateGame() {
     if (survivalTime % 400 === 0) windForce = (Math.random() - 0.5) * 1.5;
     if (survivalTime % 600 === 0) windForce = 0;
 
-    // Timer Scudo di 5 Secondi (300 frame a 60fps)
     if (shieldActive) {
         shieldTimer--;
         if (shieldTimer <= 0) shieldActive = false;
@@ -634,7 +641,7 @@ function updateGame() {
                         return;
                     }
                 } else {
-                    obstacles.splice(i, 1); // Lo scudo protegge e schiva senza disattivarsi!
+                    obstacles.splice(i, 1);
                 }
             } else if (obs.type === 'laserEnemy') {
                 if (!shieldActive) {
@@ -648,7 +655,7 @@ function updateGame() {
                     gainedPoints = doublePointsActive ? obs.points * 2 : obs.points;
                 } else if (obs.type === 'shield') {
                     shieldActive = true;
-                    shieldTimer = 300; // 5 secondi esatti (60 FPS * 5s)
+                    shieldTimer = 300;
                 } else if (obs.type === 'double') {
                     doublePointsActive = true;
                     doublePointsTimer = 480;
@@ -808,14 +815,11 @@ async function checkForUpdates() {
                     changelogList.appendChild(li);
                 });
             }
-            // Se c'è un aggiornamento, mostriamo il pop-up delle novità
             if (updatePopup) updatePopup.classList.remove('hidden');
         } else {
-            // Se NON ci sono aggiornamenti, mostriamo finalmente la schermata di avvio in modo pulito
             if (startScreen) startScreen.classList.remove('hidden');
         }
     } catch (error) {
-        // In caso di errore o assenza di connessione, mostriamo comunque la schermata di avvio
         if (startScreen) startScreen.classList.remove('hidden');
     }
 }
