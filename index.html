@@ -23,6 +23,7 @@
             padding-top: 5px;
             overflow: auto;
             touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent; /* Rimuove l'alone blu predefinito su mobile */
         }
 
         .game-container {
@@ -103,7 +104,7 @@
             z-index: 20;
         }
 
-        /* Schermata Splash e Download personalizzata */
+        /* Schermata Splash e Download */
         #splash-screen, #download-screen {
             z-index: 40;
             background: linear-gradient(180deg, #100530 0%, #2a115c 50%, #4a1c82 100%);
@@ -203,6 +204,11 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            transition: transform 0.1s ease, background-color 0.1s ease;
+        }
+
+        .plane-slot:active {
+            transform: scale(0.95);
         }
 
         .plane-slot .plane-emoji { font-size: 24px; margin-bottom: 4px; }
@@ -217,6 +223,7 @@
         #save-score-section { margin: 6px 0; }
         #player-name { padding: 6px; border-radius: 4px; border: none; font-size: 14px; margin-right: 5px; width: 130px; }
 
+        /* --- STILE GENERALE PULSANTI CON EFFETTO PREMUTO --- */
         button {
             padding: 10px 16px;
             background-color: #29b6f6;
@@ -226,8 +233,22 @@
             font-weight: bold;
             cursor: pointer;
             font-size: 14px;
+            box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25);
+            transition: transform 0.08s ease, box-shadow 0.08s ease, background-color 0.1s ease;
+            user-select: none;
+            -webkit-user-select: none;
         }
-        button:hover { background-color: #0288d1; }
+
+        button:hover {
+            filter: brightness(1.1);
+        }
+
+        /* EFFETTO BOTTONE PREMUTO (CLICK / TOUCH) */
+        button:active {
+            transform: translateY(2px) scale(0.96);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+            filter: brightness(0.9);
+        }
 
         #leaderboard-container {
             width: 100%; max-height: 130px; overflow-y: auto; margin: 6px 0;
@@ -296,8 +317,8 @@
         
         <!-- Pulsanti In-Game -->
         <div id="in-game-buttons" style="display: none; justify-content: space-between; margin-bottom: 6px; padding: 0 2px;">
-            <button id="pause-btn" style="background: #ff9800; font-size:12px; padding:4px 10px;">⏸️ Pausa</button>
-            <button id="restart-prompt-btn" style="background: #e53935; font-size:12px; padding:4px 10px;">🔄 Ricomincia</button>
+            <button id="pause-btn" style="background: #ff9800; font-size:12px; padding:5px 12px;">⏸️ Pausa</button>
+            <button id="restart-prompt-btn" style="background: #e53935; font-size:12px; padding:5px 12px;">🔄 Ricomincia</button>
         </div>
 
         <div class="canvas-wrapper">
@@ -362,7 +383,7 @@
                 <p>Vuoi davvero ricominciare la partita o tornare al menù?</p>
                 <div class="popup-buttons">
                     <button id="confirm-restart-btn" style="background-color: #e53935;">Ricomincia la partita</button>
-                    <button id="restart-to-menu-btn" style="background-color: #512da8;">Torna al menù</button>
+                    <button id="restart-to-menu-btn" style="background-color: #512da8;">Torna al menuù/button>
                     <button id="cancel-restart-btn" style="background-color: #757575;">Annulla</button>
                 </div>
             </div>
