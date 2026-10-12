@@ -151,7 +151,6 @@ function runInitialLoading() {
             clearInterval(interval);
             setTimeout(() => {
                 splashScreen.classList.add('hidden');
-                // Dopo il caricamento iniziale controlliamo se c'è un update prima di mostrare il menu
                 checkForUpdates();
             }, 300);
         }
@@ -251,44 +250,37 @@ if (restartToMenuBtn) {
     });
 }
 
-// --- GESTIONE TOUCH E JOYSTICK MOBILE ---
+// --- CONTROLLI MOBILE ISTANTANEI CON POINTER EVENTS ---
 let joystick = { active: false, identifier: null, startX: 0, startY: 0, vx: 0 };
 const vJoystickEl = document.getElementById('virtualJoystick');
 const knobEl = document.getElementById('joystickKnob');
 
 if (vJoystickEl && knobEl) {
-    vJoystickEl.addEventListener('touchstart', (e) => {
+    vJoystickEl.addEventListener('pointerdown', (e) => {
         e.preventDefault();
-        const touch = e.changedTouches[0];
+        vJoystickEl.setPointerCapture(e.pointerId);
         joystick.active = true;
-        joystick.identifier = touch.identifier;
+        joystick.identifier = e.pointerId;
         const rect = vJoystickEl.getBoundingClientRect();
         joystick.startX = rect.left + rect.width / 2;
-        updateJoystick(touch.clientX);
-    }, { passive: false });
-
-    window.addEventListener('touchmove', (e) => {
-        if (!joystick.active) return;
-        for (let i = 0; i < e.changedTouches.length; i++) {
-            const touch = e.changedTouches[i];
-            if (touch.identifier === joystick.identifier) {
-                updateJoystick(touch.clientX);
-                break;
-            }
-        }
-    }, { passive: false });
-
-    window.addEventListener('touchend', (e) => {
-        if (!joystick.active) return;
-        for (let i = 0; i < e.changedTouches.length; i++) {
-            if (e.changedTouches[i].identifier === joystick.identifier) {
-                joystick.active = false;
-                joystick.vx = 0;
-                knobEl.style.transform = `translate(0px, 0px)`;
-                break;
-            }
-        }
+        updateJoystick(e.clientX);
     });
+
+    vJoystickEl.addEventListener('pointermove', (e) => {
+        if (!joystick.active || e.pointerId !== joystick.identifier) return;
+        updateJoystick(e.clientX);
+    });
+
+    const stopJoystick = (e) => {
+        if (e.pointerId === joystick.identifier) {
+            joystick.active = false;
+            joystick.vx = 0;
+            knobEl.style.transform = `translate(0px, 0px)`;
+        }
+    };
+
+    vJoystickEl.addEventListener('pointerup', stopJoystick);
+    vJoystickEl.addEventListener('pointercancel', stopJoystick);
 }
 
 function updateJoystick(clientX) {
@@ -303,10 +295,13 @@ function updateJoystick(clientX) {
 const leftBtn = document.getElementById('left-btn');
 const rightBtn = document.getElementById('right-btn');
 if (leftBtn && rightBtn) {
-    leftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys.ArrowLeft = true; });
-    leftBtn.addEventListener('touchend', (e) => { e.preventDefault(); keys.ArrowLeft = false; });
-    rightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys.ArrowRight = true; });
-    rightBtn.addEventListener('touchend', (e) => { e.preventDefault(); keys.ArrowRight = false; });
+    leftBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); keys.ArrowLeft = true; });
+    leftBtn.addEventListener('pointerup', (e) => { e.preventDefault(); keys.ArrowLeft = false; });
+    leftBtn.addEventListener('pointerleave', (e) => { e.preventDefault(); keys.ArrowLeft = false; });
+
+    rightBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); keys.ArrowRight = true; });
+    rightBtn.addEventListener('pointerup', (e) => { e.preventDefault(); keys.ArrowRight = false; });
+    rightBtn.addEventListener('pointerleave', (e) => { e.preventDefault(); keys.ArrowRight = false; });
 }
 
 if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
@@ -480,22 +475,20 @@ function draw() {
 
     if (shieldActive) {
         ctx.strokeStyle = '#29b6f6';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.arc(plane.x + plane.width / 2, plane.y + plane.height / 2, 28, 0, Math.PI * 2);
         ctx.stroke();
     }
 
-    if (!shieldActive || Math.floor(Date.now() / 100) % 2 === 0) {
-        ctx.save();
-        ctx.translate(plane.x + plane.width / 2, plane.y + plane.height / 2);
-        ctx.rotate(-Math.PI / 4); 
-        ctx.font = '36px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(plane.emoji, 0, 0);
-        ctx.restore();
-    }
+    ctx.save();
+    ctx.translate(plane.x + plane.width / 2, plane.y + plane.height / 2);
+    ctx.rotate(-Math.PI / 4); 
+    ctx.font = '36px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(plane.emoji, 0, 0);
+    ctx.restore();
 
     for (let obs of obstacles) {
         ctx.save();
@@ -519,6 +512,13 @@ function draw() {
         ctx.textAlign = 'left';
         ctx.fillText('PUNTI x2!', 15, 25);
     }
+
+    if (shieldActive) {
+        ctx.fillStyle = '#29b6f6';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(`SCUDO: ${Math.ceil(shieldTimer / 60)}s`, canvas.width - 15, 25);
+    }
 }
 
 function updateGame() {
@@ -535,6 +535,7 @@ function updateGame() {
     if (survivalTime % 400 === 0) windForce = (Math.random() - 0.5) * 1.5;
     if (survivalTime % 600 === 0) windForce = 0;
 
+    // Timer Scudo di 5 Secondi (300 frame a 60fps)
     if (shieldActive) {
         shieldTimer--;
         if (shieldTimer <= 0) shieldActive = false;
@@ -564,6 +565,7 @@ function updateGame() {
         obstacleTimer = 0;
     }
 
+    // Laser Nemici
     for (let i = enemyLasers.length - 1; i >= 0; i--) {
         enemyLasers[i].y += enemyLasers[i].speed;
         let padding = 8;
@@ -573,10 +575,8 @@ function updateGame() {
             plane.y + padding < enemyLasers[i].y + enemyLasers[i].height - padding &&
             plane.y + plane.height - padding > enemyLasers[i].y + enemyLasers[i].height
         ) {
-            addParticles(plane.x + plane.width / 2, plane.y + plane.height / 2, '#ff1744', 10);
-            if (shieldActive) {
-                shieldActive = false;
-            } else {
+            addParticles(enemyLasers[i].x, enemyLasers[i].y, '#ff1744', 10);
+            if (!shieldActive) {
                 score = Math.max(0, score - 5);
                 if (currentScoreEl) currentScoreEl.textContent = score;
             }
@@ -586,6 +586,7 @@ function updateGame() {
         if (enemyLasers[i].y > canvas.height) enemyLasers.splice(i, 1);
     }
 
+    // Ostacoli Generali
     for (let i = obstacles.length - 1; i >= 0; i--) {
         let obs = obstacles[i];
         obs.y += obs.speed;
@@ -613,11 +614,9 @@ function updateGame() {
             plane.y + plane.height - padding > obs.y + padding
         ) {
             addParticles(obs.x + obs.width / 2, obs.y + obs.height / 2, obs.type === 'bonus' ? '#69f0ae' : '#ff9800', 12);
+            
             if (obs.type === 'lightning') {
-                if (shieldActive) {
-                    shieldActive = false;
-                    obstacles.splice(i, 1);
-                } else {
+                if (!shieldActive) {
                     lives--;
                     updateLivesDisplay();
                     obstacles.splice(i, 1);
@@ -625,23 +624,22 @@ function updateGame() {
                         triggerGameOver();
                         return;
                     }
+                } else {
+                    obstacles.splice(i, 1); // Lo scudo protegge e schiva senza disattivarsi!
                 }
             } else if (obs.type === 'laserEnemy') {
-                if (shieldActive) {
-                    shieldActive = false;
-                    obstacles.splice(i, 1);
-                } else {
+                if (!shieldActive) {
                     score = Math.max(0, score - 5);
                     if (currentScoreEl) currentScoreEl.textContent = score;
-                    obstacles.splice(i, 1);
                 }
+                obstacles.splice(i, 1);
             } else {
                 let gainedPoints = 0;
                 if (obs.type === 'bonus') {
                     gainedPoints = doublePointsActive ? obs.points * 2 : obs.points;
                 } else if (obs.type === 'shield') {
                     shieldActive = true;
-                    shieldTimer = 300;
+                    shieldTimer = 300; // 5 secondi esatti (60 FPS * 5s)
                 } else if (obs.type === 'double') {
                     doublePointsActive = true;
                     doublePointsTimer = 480;
@@ -738,7 +736,7 @@ if (saveBtn) {
                 },
                 body: JSON.stringify({ 
                     scores: scores, 
-                    latestVersion: data.record.latestVersion || "2.4", 
+                    latestVersion: data.record.latestVersion || "2.5", 
                     changelog: data.record.changelog || [] 
                 })
             });
@@ -796,14 +794,13 @@ async function checkForUpdates() {
             if (changelogList) {
                 changelogList.innerHTML = '';
                 changelogItems.forEach(item => {
-                    let li = document.createElement('li');
+                    let li = document.textContent ? document.createElement('li') : document.createElement('li');
                     li.textContent = item;
                     changelogList.appendChild(li);
                 });
             }
             if (updatePopup) updatePopup.classList.remove('hidden');
         } else {
-            // Se non ci sono aggiornamenti, mostriamo la schermata di avvio col tasto AVVIA GIOCO
             if (startScreen) startScreen.classList.remove('hidden');
         }
     } catch (error) {
@@ -812,5 +809,4 @@ async function checkForUpdates() {
 }
 
 draw();
-// Avviamo la barra di caricamento iniziale
 runInitialLoading();
