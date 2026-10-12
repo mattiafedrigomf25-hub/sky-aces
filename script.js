@@ -803,16 +803,19 @@ async function checkForUpdates() {
             if (changelogList) {
                 changelogList.innerHTML = '';
                 changelogItems.forEach(item => {
-                    let li = document.textContent ? document.createElement('li') : document.createElement('li');
+                    let li = document.createElement('li');
                     li.textContent = item;
                     changelogList.appendChild(li);
                 });
             }
+            // Se c'è un aggiornamento, mostriamo il pop-up delle novità
             if (updatePopup) updatePopup.classList.remove('hidden');
         } else {
+            // Se NON ci sono aggiornamenti, mostriamo finalmente la schermata di avvio in modo pulito
             if (startScreen) startScreen.classList.remove('hidden');
         }
     } catch (error) {
+        // In caso di errore o assenza di connessione, mostriamo comunque la schermata di avvio
         if (startScreen) startScreen.classList.remove('hidden');
     }
 }
