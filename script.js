@@ -2,6 +2,16 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const currentScoreEl = document.getElementById('current-score');
 const livesEl = document.getElementById('lives-display');
+
+// Schermate Principali
+const splashScreen = document.getElementById('splash-screen');
+const splashProgressBar = document.getElementById('splash-progress-bar');
+const splashProgressText = document.getElementById('splash-progress-text');
+
+const downloadScreen = document.getElementById('download-screen');
+const downloadProgressBar = document.getElementById('download-progress-bar');
+const downloadProgressText = document.getElementById('download-progress-text');
+
 const startScreen = document.getElementById('start-screen');
 const startBtn = document.getElementById('start-btn');
 const gameOverScreen = document.getElementById('game-over-screen');
@@ -13,7 +23,7 @@ const menuBtn = document.getElementById('menu-btn');
 const leaderboardList = document.getElementById('leaderboard-list');
 const saveScoreSection = document.getElementById('save-score-section');
 
-// Elementi Pausa e Ricomincia
+// Elementi In-Game
 const inGameButtons = document.getElementById('in-game-buttons');
 const pauseBtn = document.getElementById('pause-btn');
 const pausePopup = document.getElementById('pause-popup');
@@ -38,17 +48,18 @@ const changelogList = document.getElementById('changelog-list');
 const changelogTitle = document.getElementById('changelog-title');
 const currentVersionLabel = document.getElementById('current-version-label');
 
-// Versione installata sul browser (default 2.3)
+// Versione installata sul browser
 const LOCAL_INSTALLED_VERSION = localStorage.getItem('sky_ace_installed_version') || "2.3";
 if (currentVersionLabel) currentVersionLabel.textContent = LOCAL_INSTALLED_VERSION;
 
-// Mostra i bottoni in-game solo se l'utente ha già effettuato l'aggiornamento
 if (localStorage.getItem('sky_ace_installed_version') && inGameButtons) {
     inGameButtons.style.display = 'flex';
 }
 
 const BIN_ID = '6ac4b87cffd5d1605351f58d';
 const MASTER_KEY = '$2a$10$aplyk/beh6fEjv43q.yWK.yNbASVpWB2lHxQ8.O3c9aj0.zzW4Kuu';
+
+let onlineVersionToInstall = null;
 
 const PLANES_DATA = [
     { id: 0, emoji: '✈️', name: 'Aereo di Linea', points: 0 },
@@ -119,7 +130,7 @@ let keys = { ArrowLeft: false, ArrowRight: false };
 window.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft') keys.ArrowLeft = true;
     if (e.key === 'ArrowRight') keys.ArrowRight = true;
-    if (e.key === ' ' && !gameStarted && planeModal.classList.contains('hidden') && pausePopup.classList.contains('hidden') && restartConfirmPopup.classList.contains('hidden') && updatePopup.classList.contains('hidden')) {
+    if (e.key === ' ' && !gameStarted && planeModal.classList.contains('hidden') && pausePopup.classList.contains('hidden') && restartConfirmPopup.classList.contains('hidden') && updatePopup.classList.contains('hidden') && splashScreen.classList.contains('hidden')) {
         e.preventDefault();
         startGame();
     }
@@ -129,6 +140,52 @@ window.addEventListener('keyup', (e) => {
     if (e.key === 'ArrowLeft') keys.ArrowLeft = false;
     if (e.key === 'ArrowRight') keys.ArrowRight = false;
 });
+
+// --- CARICAMENTO INIZIALE (SPLASH SCREEN) ---
+function runInitialLoading() {
+    let progress = 0;
+    let interval = setInterval(() => {
+        progress += Math.floor(Math.random() * 12) + 5;
+        if (progress >= 100) {
+            progress = 100;
+            clearInterval(interval);
+            setTimeout(() => {
+                splashScreen.classList.add('hidden');
+                // Dopo il caricamento iniziale controlliamo se c'è un update prima di mostrare il menu
+                checkForUpdates();
+            }, 300);
+        }
+        if (splashProgressBar) splashProgressBar.style.width = progress + '%';
+        if (splashProgressText) splashProgressText.textContent = progress + '%';
+    }, 100);
+}
+
+// --- FLUSSO AGGIORNAMENTO E DOWNLOAD ---
+if (updateActionBtn) {
+    updateActionBtn.addEventListener('click', () => {
+        if (updatePopup) updatePopup.classList.add('hidden');
+        if (downloadScreen) downloadScreen.classList.remove('hidden');
+        
+        let progress = 0;
+        let interval = setInterval(() => {
+            progress += Math.floor(Math.random() * 10) + 4;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(interval);
+                setTimeout(() => {
+                    if (onlineVersionToInstall) {
+                        localStorage.setItem('sky_ace_installed_version', onlineVersionToInstall);
+                    } else {
+                        localStorage.setItem('sky_ace_installed_version', "2.4");
+                    }
+                    window.location.reload();
+                }, 500);
+            }
+            if (downloadProgressBar) downloadProgressBar.style.width = progress + '%';
+            if (downloadProgressText) downloadProgressText.textContent = progress + '%';
+        }, 120);
+    });
+}
 
 // --- GESTIONE PAUSA ---
 if (pauseBtn) {
@@ -681,7 +738,7 @@ if (saveBtn) {
                 },
                 body: JSON.stringify({ 
                     scores: scores, 
-                    latestVersion: "2.4", 
+                    latestVersion: data.record.latestVersion || "2.4", 
                     changelog: data.record.changelog || [] 
                 })
             });
@@ -723,7 +780,7 @@ if (menuBtn) {
     });
 }
 
-// --- CONTROLLO AGGIORNAMENTI DINAMICO DA CLOUD ---
+// --- CONTROLLO AGGIORNAMENTI ---
 async function checkForUpdates() {
     try {
         let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
@@ -734,6 +791,7 @@ async function checkForUpdates() {
         let changelogItems = data.record.changelog || ["Aggiornamenti generali."];
 
         if (onlineVersion !== LOCAL_INSTALLED_VERSION) {
+            onlineVersionToInstall = onlineVersion;
             if (changelogTitle) changelogTitle.textContent = `Novità della versione ${onlineVersion}:`;
             if (changelogList) {
                 changelogList.innerHTML = '';
@@ -744,29 +802,15 @@ async function checkForUpdates() {
                 });
             }
             if (updatePopup) updatePopup.classList.remove('hidden');
+        } else {
+            // Se non ci sono aggiornamenti, mostriamo la schermata di avvio col tasto AVVIA GIOCO
+            if (startScreen) startScreen.classList.remove('hidden');
         }
     } catch (error) {
-        console.log("Controllo aggiornamenti offline.");
+        if (startScreen) startScreen.classList.remove('hidden');
     }
 }
 
-if (updateActionBtn) {
-    updateActionBtn.addEventListener('click', async () => {
-        try {
-            let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-                headers: { 'X-Master-Key': MASTER_KEY }
-            });
-            let data = await response.json();
-            let onlineVersion = data.record.latestVersion;
-            
-            // Registriamo sul browser che l'utente ha aggiornato all'ultima versione online
-            localStorage.setItem('sky_ace_installed_version', onlineVersion);
-        } catch(e) {
-            localStorage.setItem('sky_ace_installed_version', "2.4");
-        }
-        window.location.reload();
-    });
-}
-
 draw();
-checkForUpdates();
+// Avviamo la barra di caricamento iniziale
+runInitialLoading();
