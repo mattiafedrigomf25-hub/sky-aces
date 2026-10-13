@@ -87,6 +87,37 @@
             display: none !important;
         }
 
+        /* Countdown Overlay In-Game */
+        #countdown-overlay {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            right: 4px;
+            bottom: 4px;
+            background: rgba(16, 5, 48, 0.7);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 35;
+            pointer-events: none;
+        }
+
+        #countdown-text {
+            font-size: 72px;
+            font-weight: 900;
+            color: #ffd54f;
+            text-shadow: 0 0 20px rgba(255, 213, 79, 0.8), 0 0 40px rgba(0, 0, 0, 0.9);
+            animation: popIn 0.3s ease-out;
+            text-align: center;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            70% { transform: scale(1.15); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
         /* Schermate Sovrapposte */
         #splash-screen, #start-screen, .modal, #pause-popup, #restart-confirm-popup, #game-over-screen, #update-popup, #download-screen {
             position: absolute;
@@ -299,7 +330,7 @@
             pointer-events: none;
         }
 
-        /* Controlli Mobile SEMPRE PRESENTI per reattività IMMEDIATA */
+        /* Controlli Mobile Esterni */
         #mobile-controls {
             position: absolute; 
             bottom: -68px; 
@@ -310,7 +341,7 @@
             padding: 0 5px; 
             box-sizing: border-box; 
             z-index: 25; 
-            opacity: 0.2; /* Visibile in background nel menu, 1 in gioco */
+            opacity: 0.2;
             pointer-events: auto;
             touch-action: none;
         }
@@ -372,6 +403,11 @@
 
         <div class="canvas-wrapper">
             <canvas id="gameCanvas" width="400" height="600"></canvas>
+
+            <!-- Countdown Overlay -->
+            <div id="countdown-overlay" class="hidden">
+                <div id="countdown-text">3</div>
+            </div>
 
             <!-- 1. SCHERMATA SPLASH (CARICAMENTO INIZIALE) -->
             <div id="splash-screen">
@@ -471,7 +507,7 @@
                 <button id="update-action-btn" style="background-color: #69f0ae; color: #1a0b4b;">AGGIORNA ORA</button>
             </div>
 
-            <!-- Controlli Mobile Esterni Sempre Attivi nel DOM -->
+            <!-- Controlli Mobile Esterni -->
             <div id="mobile-controls">
                 <button id="left-btn" class="side-control-btn">⬅️ SINISTRA</button>
                 <button id="right-btn" class="side-control-btn">DESTRA ➡️</button>
