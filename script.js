@@ -327,7 +327,7 @@ if (restartToMenuBtn) {
     });
 }
 
-// --- CONTROLLI MOBILE IMMEDIATI ---
+// --- CONTROLLI MOBILE ---
 const mobileControls = document.getElementById('mobile-controls');
 const leftBtn = document.getElementById('left-btn');
 const rightBtn = document.getElementById('right-btn');
@@ -447,7 +447,7 @@ if (closePlaneModalBtn) {
     };
 }
 
-// --- FUNZIONE COUNTDOWN PER MASCHERARE IL RITARDO ---
+// --- FUNZIONE COUNTDOWN ---
 function runCountdown(onComplete) {
     isCountdownActive = true;
     let count = 3;
@@ -462,7 +462,7 @@ function runCountdown(onComplete) {
         if (count > 0) {
             if (countdownText) {
                 countdownText.style.animation = 'none';
-                void countdownText.offsetWidth; // Trigger reflow per riavviare l'animazione
+                void countdownText.offsetWidth;
                 countdownText.style.animation = 'popIn 0.3s ease-out';
                 countdownText.textContent = count;
             }
@@ -497,6 +497,7 @@ function startGame() {
     if (pausePopup) pausePopup.classList.add('hidden');
     if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
     
+    // Mostra i tasti ai lati all'istante dell'avvio
     updateMobileControlsVisibility(true);
 
     plane.emoji = PLANES_DATA[selectedPlaneId].emoji;
@@ -519,7 +520,6 @@ function startGame() {
     if (recordDisplayEl) recordDisplayEl.textContent = highScore;
     updateLivesDisplay();
 
-    // Avviamo il countdown prima dello spawn degli ostacoli
     runCountdown(() => {});
 
     updateGame();
@@ -628,7 +628,6 @@ function updateGame() {
     if (plane.x < 0) plane.x = 0;
     if (plane.x + plane.width > canvas.width) plane.x = canvas.width - plane.width;
 
-    // Se siamo durante il countdown, aggiorniamo solo la posizione dell'aereo ma non creiamo ostacoli
     if (isCountdownActive) {
         draw();
         requestAnimationFrame(updateGame);
@@ -904,7 +903,7 @@ async function checkForUpdates() {
                     changelogList.appendChild(li);
                 });
             }
-            if (updatePopup) updatePopup.classList.remove('hidden');
+            if (updatePopup) updatePopup.classList.add('hidden');
         } else {
             if (startScreen) startScreen.classList.remove('hidden');
         }
