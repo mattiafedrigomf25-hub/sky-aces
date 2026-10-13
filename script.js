@@ -33,12 +33,19 @@ const pauseBtn = document.getElementById('pause-btn');
 const pausePopup = document.getElementById('pause-popup');
 const resumeBtn = document.getElementById('resume-btn');
 const pauseToMenuBtn = document.getElementById('pause-to-menu-btn');
+const pauseExitBtn = document.getElementById('pause-exit-btn');
 
 const restartPromptBtn = document.getElementById('restart-prompt-btn');
 const restartConfirmPopup = document.getElementById('restart-confirm-popup');
 const confirmRestartBtn = document.getElementById('confirm-restart-btn');
 const restartToMenuBtn = document.getElementById('restart-to-menu-btn');
+const restartExitBtn = document.getElementById('restart-exit-btn');
 const cancelRestartBtn = document.getElementById('cancel-restart-btn');
+
+// Pop-up Uscita
+const exitConfirmPopup = document.getElementById('exit-confirm-popup');
+const confirmExitBtn = document.getElementById('confirm-exit-btn');
+const cancelExitBtn = document.getElementById('cancel-exit-btn');
 
 // Hangar e Update
 const openPlaneModalBtn = document.getElementById('open-plane-modal-btn');
@@ -219,6 +226,59 @@ function isMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
 }
 
+// --- GESTIONE USCITA E TASTO INDIETRO ANDROID ---
+function pushDummyState() {
+    history.pushState({ page: 'game' }, '', window.location.href);
+}
+
+window.addEventListener('load', () => {
+    pushDummyState();
+});
+
+window.addEventListener('popstate', (e) => {
+    pushDummyState(); // Mantiene la storia fittizia
+    promptExitGame();
+});
+
+function promptExitGame() {
+    if (gameRunning && !gamePaused) {
+        gamePaused = true;
+    }
+    if (exitConfirmPopup) exitConfirmPopup.classList.remove('hidden');
+}
+
+function closeExitPrompt() {
+    if (exitConfirmPopup) exitConfirmPopup.classList.add('hidden');
+    if (gameRunning) {
+        // Mostra la pausa per sicurezza quando si rifiuta l'uscita
+        if (pausePopup) pausePopup.classList.remove('hidden');
+    }
+}
+
+function executeExitGame() {
+    gameRunning = false;
+    gameStarted = false;
+    gamePaused = false;
+    
+    updateMobileControlsVisibility(false);
+    
+    if (exitConfirmPopup) exitConfirmPopup.classList.add('hidden');
+    if (pausePopup) pausePopup.classList.add('hidden');
+    if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
+    if (gameOverScreen) gameOverScreen.classList.add('hidden');
+    
+    // Ritorna allo SplashScreen per un caricamento pulito
+    if (splashScreen) splashScreen.classList.remove('hidden');
+    if (startScreen) startScreen.classList.add('hidden');
+    
+    runInitialLoading();
+}
+
+if (confirmExitBtn) confirmExitBtn.addEventListener('click', executeExitGame);
+if (cancelExitBtn) cancelExitBtn.addEventListener('click', closeExitPrompt);
+if (pauseExitBtn) pauseExitBtn.addEventListener('click', promptExitGame);
+if (restartExitBtn) restartExitBtn.addEventListener('click', promptExitGame);
+
 // --- GESTIONE USCITA IN BACKGROUND (METTE IN PAUSA SE RIENTRI) ---
 document.addEventListener('visibilitychange', () => {
     if (document.hidden && gameRunning && !gamePaused && !isCountdownActive) {
@@ -227,7 +287,7 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
-// --- CARICAMENTO INIZIALE ROBUSTO ANCHE PER PC ---
+// --- CARICAMENTO INIZIALE ROBUSTO ---
 async function runInitialLoading() {
     let progress = 0;
     
@@ -343,14 +403,13 @@ if (restartToMenuBtn) {
     });
 }
 
-// --- CONTROLLI MOBILE (ATTIVI SOLO SU DISPOSITIVI TOUCH) ---
+// --- CONTROLLI MOBILE ---
 const mobileControls = document.getElementById('mobile-controls');
 const leftBtn = document.getElementById('left-btn');
 const rightBtn = document.getElementById('right-btn');
 
 function updateMobileControlsVisibility(show) {
     if (!mobileControls) return;
-    // Se siamo su PC, non mostriamo MAI i tasti touch a schermo
     if (!isMobileDevice()) {
         mobileControls.classList.remove('in-game-active');
         return;
@@ -518,6 +577,7 @@ function startGame() {
     if (gameOverScreen) gameOverScreen.classList.add('hidden');
     if (pausePopup) pausePopup.classList.add('hidden');
     if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
+    if (exitConfirmPopup) exitConfirmPopup.classList.add('hidden');
     
     updateMobileControlsVisibility(true);
 
