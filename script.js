@@ -214,6 +214,11 @@ window.addEventListener('keyup', (e) => {
     if (e.key === 'ArrowRight') keys.ArrowRight = false;
 });
 
+// --- RILEVAMENTO DISPOSITIVO MOBILE VS PC ---
+function isMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
+}
+
 // --- GESTIONE USCITA IN BACKGROUND (METTE IN PAUSA SE RIENTRI) ---
 document.addEventListener('visibilitychange', () => {
     if (document.hidden && gameRunning && !gamePaused && !isCountdownActive) {
@@ -226,7 +231,6 @@ document.addEventListener('visibilitychange', () => {
 async function runInitialLoading() {
     let progress = 0;
     
-    // Tentativo di caricamento cloud con timeout di sicurezza per non bloccare mai il PC
     let cloudPromise = loadProgressFromCloud();
     let timeoutPromise = new Promise(res => setTimeout(res, 2000));
     await Promise.race([cloudPromise, timeoutPromise]);
@@ -339,13 +343,19 @@ if (restartToMenuBtn) {
     });
 }
 
-// --- CONTROLLI MOBILE ---
+// --- CONTROLLI MOBILE (ATTIVI SOLO SU DISPOSITIVI TOUCH) ---
 const mobileControls = document.getElementById('mobile-controls');
 const leftBtn = document.getElementById('left-btn');
 const rightBtn = document.getElementById('right-btn');
 
 function updateMobileControlsVisibility(show) {
     if (!mobileControls) return;
+    // Se siamo su PC, non mostriamo MAI i tasti touch a schermo
+    if (!isMobileDevice()) {
+        mobileControls.classList.remove('in-game-active');
+        return;
+    }
+    
     if (show) {
         mobileControls.classList.add('in-game-active');
     } else {
@@ -791,8 +801,6 @@ function updateGame() {
 
 function triggerGameOver() {
     gameRunning = false;
-    
-    // Nasconde immediatamente i tasti freccia quando si perde
     updateMobileControlsVisibility(false);
     
     if (score > highScore) highScore = score;
@@ -896,7 +904,7 @@ if (menuBtn) {
     });
 }
 
-// --- CONTROLLO AGGIORNAMENTI (ROBUSTO PER PC E MOBILE) ---
+// --- CONTROLLO AGGIORNAMENTI ---
 async function checkForUpdates() {
     try {
         let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
@@ -922,7 +930,6 @@ async function checkForUpdates() {
             if (startScreen) startScreen.classList.remove('hidden');
         }
     } catch (error) {
-        // Fallback di sicurezza: se fallisce la chiamata online su PC, mostra comunque la schermata di avvio
         if (startScreen) startScreen.classList.remove('hidden');
     }
 }
