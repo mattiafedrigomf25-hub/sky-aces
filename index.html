@@ -300,18 +300,25 @@
             pointer-events: none;
         }
 
-        /* Controlli Mobile Esterni e Grandi ai Lati */
+        /* Controlli Mobile Esterni pre-caricati e pronti all'istante */
         #mobile-controls {
             position: absolute; 
             bottom: -68px; 
             left: 0; 
             right: 0;
-            display: none; 
+            display: flex; 
             justify-content: space-between; 
             padding: 0 5px; 
             box-sizing: border-box; 
             z-index: 25; 
+            opacity: 0;
             pointer-events: none;
+            transition: opacity 0.15s ease;
+        }
+
+        #mobile-controls.active-controls {
+            opacity: 1;
+            pointer-events: auto;
         }
 
         .side-control-btn {
@@ -466,7 +473,7 @@
                 <button id="update-action-btn" style="background-color: #69f0ae; color: #1a0b4b;">AGGIORNA ORA</button>
             </div>
 
-            <!-- Controlli Mobile Esterni e Grandi -->
+            <!-- Controlli Mobile Esterni (Pre-caricati) -->
             <div id="mobile-controls">
                 <button id="left-btn" class="side-control-btn">⬅️ SINISTRA</button>
                 <button id="right-btn" class="side-control-btn">DESTRA ➡️</button>
