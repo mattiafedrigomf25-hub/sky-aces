@@ -23,6 +23,10 @@ const menuBtn = document.getElementById('menu-btn');
 const leaderboardList = document.getElementById('leaderboard-list');
 const saveScoreSection = document.getElementById('save-score-section');
 
+// Elementi Countdown Overlay
+const countdownOverlay = document.getElementById('countdown-overlay');
+const countdownText = document.getElementById('countdown-text');
+
 // Elementi In-Game
 const inGameButtons = document.getElementById('in-game-buttons');
 const pauseBtn = document.getElementById('pause-btn');
@@ -74,7 +78,6 @@ const PLANES_DATA = [
     { id: 9, emoji: '✈️', name: 'Aereo Acrobatico', points: 1800 }
 ];
 
-// ID condiviso unico per sincronizzare PC e Telefono sullo stesso profilo master
 const pilotId = 'PILOTA_MASTER';
 
 let totalLifetimeScore = parseInt(localStorage.getItem('sky_ace_total_score')) || 0;
@@ -186,6 +189,7 @@ let lives = 3;
 let gameStarted = false; 
 let gameRunning = false; 
 let gamePaused = false;
+let isCountdownActive = false;
 let survivalTime = 0;
 
 let shieldActive = false;
@@ -213,7 +217,6 @@ window.addEventListener('keyup', (e) => {
 // --- CARICAMENTO INIZIALE CON SINCRONIZZAZIONE ---
 async function runInitialLoading() {
     let progress = 0;
-    
     await loadProgressFromCloud();
 
     let interval = setInterval(() => {
@@ -261,7 +264,7 @@ if (updateActionBtn) {
 // --- GESTIONE PAUSA ---
 if (pauseBtn) {
     pauseBtn.addEventListener('click', () => {
-        if (!gameStarted) return;
+        if (!gameStarted || isCountdownActive) return;
         gamePaused = true;
         if (pausePopup) pausePopup.classList.remove('hidden');
     });
@@ -289,7 +292,7 @@ if (pauseToMenuBtn) {
 // --- GESTIONE RICOMINCIA / CONFERMA ---
 if (restartPromptBtn) {
     restartPromptBtn.addEventListener('click', () => {
-        if (!gameStarted) return;
+        if (!gameStarted || isCountdownActive) return;
         gamePaused = true;
         if (restartConfirmPopup) restartConfirmPopup.classList.remove('hidden');
     });
@@ -324,7 +327,7 @@ if (restartToMenuBtn) {
     });
 }
 
-// --- CONTROLLI MOBILE IMMEDIATI SUL DOM (ZERO LATENZA) ---
+// --- CONTROLLI MOBILE IMMEDIATI ---
 const mobileControls = document.getElementById('mobile-controls');
 const leftBtn = document.getElementById('left-btn');
 const rightBtn = document.getElementById('right-btn');
@@ -338,7 +341,6 @@ function updateMobileControlsVisibility(show) {
     }
 }
 
-// Aggancio Touch Event Diretto a livello Hardware
 function setupInstantButton(btn, keyProp) {
     if (!btn) return;
 
@@ -352,12 +354,10 @@ function setupInstantButton(btn, keyProp) {
         keys[keyProp] = false;
     };
 
-    // Touch nativo prioritaria
     btn.addEventListener('touchstart', startAction, { passive: false });
     btn.addEventListener('touchend', stopAction, { passive: false });
     btn.addEventListener('touchcancel', stopAction, { passive: false });
 
-    // Pointer events secondari per compatibilità
     btn.addEventListener('pointerdown', (e) => {
         if (e.pointerType !== 'touch') startAction(e);
     }, { passive: false });
@@ -447,12 +447,47 @@ if (closePlaneModalBtn) {
     };
 }
 
+// --- FUNZIONE COUNTDOWN PER MASCHERARE IL RITARDO ---
+function runCountdown(onComplete) {
+    isCountdownActive = true;
+    let count = 3;
+    if (countdownOverlay) countdownOverlay.classList.remove('hidden');
+    if (countdownText) {
+        countdownText.textContent = count;
+        countdownText.style.fontSize = '72px';
+    }
+
+    let interval = setInterval(() => {
+        count--;
+        if (count > 0) {
+            if (countdownText) {
+                countdownText.style.animation = 'none';
+                void countdownText.offsetWidth; // Trigger reflow per riavviare l'animazione
+                countdownText.style.animation = 'popIn 0.3s ease-out';
+                countdownText.textContent = count;
+            }
+        } else if (count === 0) {
+            if (countdownText) {
+                countdownText.style.animation = 'none';
+                void countdownText.offsetWidth;
+                countdownText.style.animation = 'popIn 0.3s ease-out';
+                countdownText.style.fontSize = '36px';
+                countdownText.textContent = "BUON VOLO! 🚀";
+            }
+        } else {
+            clearInterval(interval);
+            if (countdownOverlay) countdownOverlay.classList.add('hidden');
+            isCountdownActive = false;
+            if (onComplete) onComplete();
+        }
+    }, 800);
+}
+
 function startGame() {
     gameStarted = true;
     gameRunning = true;
     gamePaused = false;
     
-    // Resettiamo subito lo stato dei tasti al via
     keys.ArrowLeft = false;
     keys.ArrowRight = false;
 
@@ -483,6 +518,9 @@ function startGame() {
     if (timerDisplayEl) timerDisplayEl.textContent = '0s';
     if (recordDisplayEl) recordDisplayEl.textContent = highScore;
     updateLivesDisplay();
+
+    // Avviamo il countdown prima dello spawn degli ostacoli
+    runCountdown(() => {});
 
     updateGame();
 }
@@ -584,6 +622,19 @@ function draw() {
 function updateGame() {
     if (!gameRunning || gamePaused) return;
 
+    if (keys.ArrowLeft) plane.x -= plane.speed;
+    if (keys.ArrowRight) plane.x += plane.speed;
+
+    if (plane.x < 0) plane.x = 0;
+    if (plane.x + plane.width > canvas.width) plane.x = canvas.width - plane.width;
+
+    // Se siamo durante il countdown, aggiorniamo solo la posizione dell'aereo ma non creiamo ostacoli
+    if (isCountdownActive) {
+        draw();
+        requestAnimationFrame(updateGame);
+        return;
+    }
+
     survivalTime++;
     if (survivalTime % 60 === 0 && timerDisplayEl) {
         timerDisplayEl.textContent = Math.floor(survivalTime / 60) + 's';
@@ -604,12 +655,7 @@ function updateGame() {
         if (doublePointsTimer <= 0) doublePointsActive = false;
     }
 
-    if (keys.ArrowLeft) plane.x -= plane.speed;
-    if (keys.ArrowRight) plane.x += plane.speed;
     plane.x += windForce;
-
-    if (plane.x < 0) plane.x = 0;
-    if (plane.x + plane.width > canvas.width) plane.x = canvas.width - plane.width;
 
     for (let i = particles.length - 1; i >= 0; i--) {
         let p = particles[i];
@@ -853,7 +899,8 @@ async function checkForUpdates() {
             if (changelogList) {
                 changelogList.innerHTML = '';
                 changelogItems.forEach(item => {
-                    let li = document.textContent = item;
+                    let li = document.createElement('li');
+                    li.textContent = item;
                     changelogList.appendChild(li);
                 });
             }
