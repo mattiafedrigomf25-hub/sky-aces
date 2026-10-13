@@ -74,12 +74,8 @@ const PLANES_DATA = [
     { id: 9, emoji: '✈️', name: 'Aereo Acrobatico', points: 1800 }
 ];
 
-// ID Pilota Univoco per la Sincronizzazione Cloud
-let pilotId = localStorage.getItem('sky_ace_pilot_id');
-if (!pilotId) {
-    pilotId = 'PILOT_' + Math.random().toString(36).substring(2, 9).toUpperCase();
-    localStorage.setItem('sky_ace_pilot_id', pilotId);
-}
+// ID condiviso unico per sincronizzare PC e Telefono sullo stesso profilo
+const pilotId = 'PILOTA_MASTER';
 
 let totalLifetimeScore = parseInt(localStorage.getItem('sky_ace_total_score')) || 0;
 let highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
@@ -120,7 +116,7 @@ async function saveProgressToCloud() {
     } catch (e) {}
 }
 
-// --- FUNZIONE PER SCARICARE IL PROGRESSO DAL CLOUD ---
+// --- FUNZIONE PER CARICARE E UNIFICARE IL PROGRESSO DAL CLOUD ---
 async function loadProgressFromCloud() {
     try {
         let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
@@ -131,19 +127,23 @@ async function loadProgressFromCloud() {
 
         if (players[pilotId]) {
             let pData = players[pilotId];
+            
+            // Prende sempre il punteggio più alto disponibile
             totalLifetimeScore = Math.max(totalLifetimeScore, pData.totalScore || 0);
             highScore = Math.max(highScore, pData.highScore || 0);
             
+            // Unisce gli aerei sbloccati tra dispositivi
             if (Array.isArray(pData.unlockedPlanes)) {
                 pData.unlockedPlanes.forEach(id => {
                     if (!unlockedPlanes.includes(id)) unlockedPlanes.push(id);
                 });
             }
+            
             if (pData.selectedPlaneId !== undefined) {
                 selectedPlaneId = pData.selectedPlaneId;
             }
 
-            // Aggiorna anche il LocalStorage locale
+            // Aggiorna la memoria del browser
             localStorage.setItem('sky_ace_total_score', totalLifetimeScore);
             localStorage.setItem('sky_ace_highscore', highScore);
             localStorage.setItem('sky_ace_unlocked', JSON.stringify(unlockedPlanes));
@@ -217,7 +217,7 @@ window.addEventListener('keyup', (e) => {
 async function runInitialLoading() {
     let progress = 0;
     
-    // Scarica prima i dati dal Cloud
+    // Scarica e unifica i dati Cloud all'avvio
     await loadProgressFromCloud();
 
     let interval = setInterval(() => {
@@ -326,7 +326,7 @@ if (restartToMenuBtn) {
     });
 }
 
-// --- CONTROLLI MOBILE ISTANTANEI ---
+// --- CONTROLLI MOBILE ISTANTANEI CON POINTER EVENTS ---
 let joystick = { active: false, identifier: null, startX: 0, startY: 0, vx: 0 };
 const vJoystickEl = document.getElementById('virtualJoystick');
 const knobEl = document.getElementById('joystickKnob');
@@ -412,7 +412,7 @@ function renderPlaneGrid() {
                 selectedPlaneId = p.id;
                 plane.emoji = p.emoji;
                 localStorage.setItem('sky_ace_selected_id', selectedPlaneId);
-                saveProgressToCloud(); // Salva la selezione aereo sul cloud
+                saveProgressToCloud(); 
                 renderPlaneGrid();
             };
         } else if (canUnlock) {
@@ -424,7 +424,7 @@ function renderPlaneGrid() {
             slot.onclick = () => {
                 unlockedPlanes.push(p.id);
                 localStorage.setItem('sky_ace_unlocked', JSON.stringify(unlockedPlanes));
-                saveProgressToCloud(); // Salva lo sblocco aereo sul cloud
+                saveProgressToCloud(); 
                 renderPlaneGrid();
             };
         } else {
