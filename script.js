@@ -214,24 +214,36 @@ window.addEventListener('keyup', (e) => {
     if (e.key === 'ArrowRight') keys.ArrowRight = false;
 });
 
-// --- CARICAMENTO INIZIALE CON SINCRONIZZAZIONE ---
+// --- GESTIONE USCITA IN BACKGROUND (METTE IN PAUSA SE RIENTRI) ---
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && gameRunning && !gamePaused && !isCountdownActive) {
+        gamePaused = true;
+        if (pausePopup) pausePopup.classList.remove('hidden');
+    }
+});
+
+// --- CARICAMENTO INIZIALE ROBUSTO ANCHE PER PC ---
 async function runInitialLoading() {
     let progress = 0;
-    await loadProgressFromCloud();
+    
+    // Tentativo di caricamento cloud con timeout di sicurezza per non bloccare mai il PC
+    let cloudPromise = loadProgressFromCloud();
+    let timeoutPromise = new Promise(res => setTimeout(res, 2000));
+    await Promise.race([cloudPromise, timeoutPromise]);
 
     let interval = setInterval(() => {
-        progress += Math.floor(Math.random() * 12) + 5;
+        progress += Math.floor(Math.random() * 15) + 10;
         if (progress >= 100) {
             progress = 100;
             clearInterval(interval);
             setTimeout(() => {
-                splashScreen.classList.add('hidden');
+                if (splashScreen) splashScreen.classList.add('hidden');
                 checkForUpdates();
-            }, 300);
+            }, 200);
         }
         if (splashProgressBar) splashProgressBar.style.width = progress + '%';
         if (splashProgressText) splashProgressText.textContent = progress + '%';
-    }, 80);
+    }, 50);
 }
 
 // --- FLUSSO AGGIORNAMENTO E DOWNLOAD ---
@@ -370,7 +382,7 @@ function setupInstantButton(btn, keyProp) {
 setupInstantButton(leftBtn, 'ArrowLeft');
 setupInstantButton(rightBtn, 'ArrowRight');
 
-// --- GESTIONE MODALE E SBLOCCO AEREI ---
+// --- HANGAR AEREI ---
 function renderPlaneGrid() {
     if (!planeGrid) return;
     planeGrid.innerHTML = '';
@@ -447,7 +459,7 @@ if (closePlaneModalBtn) {
     };
 }
 
-// --- FUNZIONE COUNTDOWN ---
+// --- COUNTDOWN ---
 function runCountdown(onComplete) {
     isCountdownActive = true;
     let count = 3;
@@ -497,7 +509,6 @@ function startGame() {
     if (pausePopup) pausePopup.classList.add('hidden');
     if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
     
-    // Mostra i tasti ai lati all'istante dell'avvio
     updateMobileControlsVisibility(true);
 
     plane.emoji = PLANES_DATA[selectedPlaneId].emoji;
@@ -781,6 +792,9 @@ function updateGame() {
 function triggerGameOver() {
     gameRunning = false;
     
+    // Nasconde immediatamente i tasti freccia quando si perde
+    updateMobileControlsVisibility(false);
+    
     if (score > highScore) highScore = score;
     localStorage.setItem('sky_ace_highscore', highScore);
 
@@ -882,7 +896,7 @@ if (menuBtn) {
     });
 }
 
-// --- CONTROLLO AGGIORNAMENTI ---
+// --- CONTROLLO AGGIORNAMENTI (ROBUSTO PER PC E MOBILE) ---
 async function checkForUpdates() {
     try {
         let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
@@ -903,11 +917,12 @@ async function checkForUpdates() {
                     changelogList.appendChild(li);
                 });
             }
-            if (updatePopup) updatePopup.classList.add('hidden');
+            if (updatePopup) updatePopup.classList.remove('hidden');
         } else {
             if (startScreen) startScreen.classList.remove('hidden');
         }
     } catch (error) {
+        // Fallback di sicurezza: se fallisce la chiamata online su PC, mostra comunque la schermata di avvio
         if (startScreen) startScreen.classList.remove('hidden');
     }
 }
