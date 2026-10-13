@@ -49,7 +49,7 @@ const changelogTitle = document.getElementById('changelog-title');
 const currentVersionLabel = document.getElementById('current-version-label');
 
 // Versione installata sul browser
-const LOCAL_INSTALLED_VERSION = localStorage.getItem('sky_ace_installed_version') || "2.6";
+const LOCAL_INSTALLED_VERSION = localStorage.getItem('sky_ace_installed_version') || "2.7";
 if (currentVersionLabel) currentVersionLabel.textContent = LOCAL_INSTALLED_VERSION;
 
 if (localStorage.getItem('sky_ace_installed_version') && inGameButtons) {
@@ -247,7 +247,7 @@ if (updateActionBtn) {
                     if (onlineVersionToInstall) {
                         localStorage.setItem('sky_ace_installed_version', onlineVersionToInstall);
                     } else {
-                        localStorage.setItem('sky_ace_installed_version', "2.6");
+                        localStorage.setItem('sky_ace_installed_version', "2.7");
                     }
                     window.location.reload();
                 }, 500);
@@ -324,7 +324,7 @@ if (restartToMenuBtn) {
     });
 }
 
-// --- CONTROLLI MOBILE LATERALI ISTANTANEI ---
+// --- CONTROLLI MOBILE A LATENZA ZERO (TOUCH INSTANTANEO) ---
 const mobileControls = document.getElementById('mobile-controls');
 const leftBtn = document.getElementById('left-btn');
 const rightBtn = document.getElementById('right-btn');
@@ -335,25 +335,49 @@ function updateMobileControlsVisibility(show) {
     if (isMobile) {
         if (show) {
             mobileControls.classList.add('active-controls');
+            mobileControls.style.pointerEvents = 'auto';
         } else {
             mobileControls.classList.remove('active-controls');
+            mobileControls.style.pointerEvents = 'none';
         }
     }
 }
 
-if (leftBtn) {
-    leftBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); leftBtn.setPointerCapture(e.pointerId); keys.ArrowLeft = true; }, { passive: false });
-    leftBtn.addEventListener('pointerup', (e) => { e.preventDefault(); keys.ArrowLeft = false; }, { passive: false });
-    leftBtn.addEventListener('pointerleave', (e) => { e.preventDefault(); keys.ArrowLeft = false; }, { passive: false });
-    leftBtn.addEventListener('pointercancel', (e) => { e.preventDefault(); keys.ArrowLeft = false; }, { passive: false });
+function bindInstantTouch(element, onPressStart, onPressEnd) {
+    if (!element) return;
+
+    element.addEventListener('touchstart', (e) => {
+        if (e.cancelable) e.preventDefault();
+        onPressStart();
+    }, { passive: false });
+
+    element.addEventListener('touchend', (e) => {
+        if (e.cancelable) e.preventDefault();
+        onPressEnd();
+    }, { passive: false });
+
+    element.addEventListener('touchcancel', (e) => {
+        if (e.cancelable) e.preventDefault();
+        onPressEnd();
+    }, { passive: false });
+
+    element.addEventListener('pointerdown', (e) => {
+        if (e.pointerType !== 'touch') {
+            e.preventDefault();
+            onPressStart();
+        }
+    }, { passive: false });
+
+    element.addEventListener('pointerup', (e) => {
+        if (e.pointerType !== 'touch') {
+            e.preventDefault();
+            onPressEnd();
+        }
+    }, { passive: false });
 }
 
-if (rightBtn) {
-    rightBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); rightBtn.setPointerCapture(e.pointerId); keys.ArrowRight = true; }, { passive: false });
-    rightBtn.addEventListener('pointerup', (e) => { e.preventDefault(); keys.ArrowRight = false; }, { passive: false });
-    rightBtn.addEventListener('pointerleave', (e) => { e.preventDefault(); keys.ArrowRight = false; }, { passive: false });
-    rightBtn.addEventListener('pointercancel', (e) => { e.preventDefault(); keys.ArrowRight = false; }, { passive: false });
-}
+bindInstantTouch(leftBtn, () => { keys.ArrowLeft = true; }, () => { keys.ArrowLeft = false; });
+bindInstantTouch(rightBtn, () => { keys.ArrowRight = true; }, () => { keys.ArrowRight = false; });
 
 // --- GESTIONE MODALE E SBLOCCO AEREI ---
 function renderPlaneGrid() {
@@ -847,7 +871,7 @@ async function checkForUpdates() {
             headers: { 'X-Master-Key': MASTER_KEY }
         });
         let data = await response.json();
-        let onlineVersion = data.record.latestVersion || "2.6";
+        let onlineVersion = data.record.latestVersion || "2.7";
         let changelogItems = data.record.changelog || ["Aggiornamenti generali."];
 
         if (onlineVersion !== LOCAL_INSTALLED_VERSION) {
