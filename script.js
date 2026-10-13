@@ -280,6 +280,7 @@ if (pauseToMenuBtn) {
         gamePaused = false;
         gameRunning = false;
         gameStarted = false;
+        updateMobileControlsVisibility(false);
         if (pausePopup) pausePopup.classList.add('hidden');
         if (startScreen) startScreen.classList.remove('hidden');
     });
@@ -316,15 +317,29 @@ if (restartToMenuBtn) {
         gamePaused = false;
         gameRunning = false;
         gameStarted = false;
+        updateMobileControlsVisibility(false);
         if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
         if (gameOverScreen) gameOverScreen.classList.add('hidden');
         if (startScreen) startScreen.classList.remove('hidden');
     });
 }
 
-// --- CONTROLLI MOBILE LATERALI ESTERNI ---
+// --- CONTROLLI MOBILE LATERALI ISTANTANEI ---
+const mobileControls = document.getElementById('mobile-controls');
 const leftBtn = document.getElementById('left-btn');
 const rightBtn = document.getElementById('right-btn');
+
+function updateMobileControlsVisibility(show) {
+    if (!mobileControls) return;
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
+    if (isMobile) {
+        if (show) {
+            mobileControls.classList.add('active-controls');
+        } else {
+            mobileControls.classList.remove('active-controls');
+        }
+    }
+}
 
 if (leftBtn) {
     leftBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); leftBtn.setPointerCapture(e.pointerId); keys.ArrowLeft = true; }, { passive: false });
@@ -338,11 +353,6 @@ if (rightBtn) {
     rightBtn.addEventListener('pointerup', (e) => { e.preventDefault(); keys.ArrowRight = false; }, { passive: false });
     rightBtn.addEventListener('pointerleave', (e) => { e.preventDefault(); keys.ArrowRight = false; }, { passive: false });
     rightBtn.addEventListener('pointercancel', (e) => { e.preventDefault(); keys.ArrowRight = false; }, { passive: false });
-}
-
-if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-    let mobileControls = document.getElementById('mobile-controls');
-    if (mobileControls) mobileControls.style.display = 'flex';
 }
 
 // --- GESTIONE MODALE E SBLOCCO AEREI ---
@@ -444,6 +454,9 @@ function startGame() {
     if (pausePopup) pausePopup.classList.add('hidden');
     if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
     
+    // Attiva i controlli mobile all'istante
+    updateMobileControlsVisibility(true);
+
     requestMobileFullscreen();
 
     window.focus();
@@ -822,6 +835,7 @@ if (menuBtn) {
         }
         gameStarted = false;
         gameRunning = false;
+        updateMobileControlsVisibility(false);
         if (startScreen) startScreen.classList.remove('hidden');
     });
 }
