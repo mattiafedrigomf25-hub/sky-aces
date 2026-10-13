@@ -49,7 +49,7 @@ const changelogTitle = document.getElementById('changelog-title');
 const currentVersionLabel = document.getElementById('current-version-label');
 
 // Versione installata sul browser
-const LOCAL_INSTALLED_VERSION = localStorage.getItem('sky_ace_installed_version') || "2.7";
+const LOCAL_INSTALLED_VERSION = localStorage.getItem('sky_ace_installed_version') || "2.8";
 if (currentVersionLabel) currentVersionLabel.textContent = LOCAL_INSTALLED_VERSION;
 
 if (localStorage.getItem('sky_ace_installed_version') && inGameButtons) {
@@ -247,7 +247,7 @@ if (updateActionBtn) {
                     if (onlineVersionToInstall) {
                         localStorage.setItem('sky_ace_installed_version', onlineVersionToInstall);
                     } else {
-                        localStorage.setItem('sky_ace_installed_version', "2.7");
+                        localStorage.setItem('sky_ace_installed_version', "2.8");
                     }
                     window.location.reload();
                 }, 500);
@@ -324,60 +324,51 @@ if (restartToMenuBtn) {
     });
 }
 
-// --- CONTROLLI MOBILE A LATENZA ZERO (TOUCH INSTANTANEO) ---
+// --- CONTROLLI MOBILE IMMEDIATI SUL DOM (ZERO LATENZA) ---
 const mobileControls = document.getElementById('mobile-controls');
 const leftBtn = document.getElementById('left-btn');
 const rightBtn = document.getElementById('right-btn');
 
 function updateMobileControlsVisibility(show) {
     if (!mobileControls) return;
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
-    if (isMobile) {
-        if (show) {
-            mobileControls.classList.add('active-controls');
-            mobileControls.style.pointerEvents = 'auto';
-        } else {
-            mobileControls.classList.remove('active-controls');
-            mobileControls.style.pointerEvents = 'none';
-        }
+    if (show) {
+        mobileControls.classList.add('in-game-active');
+    } else {
+        mobileControls.classList.remove('in-game-active');
     }
 }
 
-function bindInstantTouch(element, onPressStart, onPressEnd) {
-    if (!element) return;
+// Aggancio Touch Event Diretto a livello Hardware
+function setupInstantButton(btn, keyProp) {
+    if (!btn) return;
 
-    element.addEventListener('touchstart', (e) => {
-        if (e.cancelable) e.preventDefault();
-        onPressStart();
+    const startAction = (e) => {
+        if (e && e.cancelable) e.preventDefault();
+        keys[keyProp] = true;
+    };
+
+    const stopAction = (e) => {
+        if (e && e.cancelable) e.preventDefault();
+        keys[keyProp] = false;
+    };
+
+    // Touch nativo prioritaria
+    btn.addEventListener('touchstart', startAction, { passive: false });
+    btn.addEventListener('touchend', stopAction, { passive: false });
+    btn.addEventListener('touchcancel', stopAction, { passive: false });
+
+    // Pointer events secondari per compatibilità
+    btn.addEventListener('pointerdown', (e) => {
+        if (e.pointerType !== 'touch') startAction(e);
     }, { passive: false });
 
-    element.addEventListener('touchend', (e) => {
-        if (e.cancelable) e.preventDefault();
-        onPressEnd();
-    }, { passive: false });
-
-    element.addEventListener('touchcancel', (e) => {
-        if (e.cancelable) e.preventDefault();
-        onPressEnd();
-    }, { passive: false });
-
-    element.addEventListener('pointerdown', (e) => {
-        if (e.pointerType !== 'touch') {
-            e.preventDefault();
-            onPressStart();
-        }
-    }, { passive: false });
-
-    element.addEventListener('pointerup', (e) => {
-        if (e.pointerType !== 'touch') {
-            e.preventDefault();
-            onPressEnd();
-        }
+    btn.addEventListener('pointerup', (e) => {
+        if (e.pointerType !== 'touch') stopAction(e);
     }, { passive: false });
 }
 
-bindInstantTouch(leftBtn, () => { keys.ArrowLeft = true; }, () => { keys.ArrowLeft = false; });
-bindInstantTouch(rightBtn, () => { keys.ArrowRight = true; }, () => { keys.ArrowRight = false; });
+setupInstantButton(leftBtn, 'ArrowLeft');
+setupInstantButton(rightBtn, 'ArrowRight');
 
 // --- GESTIONE MODALE E SBLOCCO AEREI ---
 function renderPlaneGrid() {
@@ -456,37 +447,22 @@ if (closePlaneModalBtn) {
     };
 }
 
-function requestMobileFullscreen() {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
-    if (isMobile && !document.fullscreenElement) {
-        let docEl = document.documentElement;
-        if (docEl.requestFullscreen) {
-            docEl.requestFullscreen().catch(err => {});
-        } else if (docEl.webkitRequestFullscreen) {
-            docEl.webkitRequestFullscreen();
-        }
-    }
-}
-
 function startGame() {
     gameStarted = true;
     gameRunning = true;
     gamePaused = false;
+    
+    // Resettiamo subito lo stato dei tasti al via
+    keys.ArrowLeft = false;
+    keys.ArrowRight = false;
+
     if (startScreen) startScreen.classList.add('hidden');
     if (planeModal) planeModal.classList.add('hidden');
     if (gameOverScreen) gameOverScreen.classList.add('hidden');
     if (pausePopup) pausePopup.classList.add('hidden');
     if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
     
-    // Attiva i controlli mobile all'istante
     updateMobileControlsVisibility(true);
-
-    requestMobileFullscreen();
-
-    window.focus();
-    if (canvas && typeof canvas.focus === 'function') {
-        canvas.focus();
-    }
 
     plane.emoji = PLANES_DATA[selectedPlaneId].emoji;
     plane.x = canvas.width / 2 - plane.width / 2;
@@ -502,9 +478,6 @@ function startGame() {
     obstacleTimer = 0;
     shieldActive = false;
     doublePointsActive = false;
-    
-    keys.ArrowLeft = false;
-    keys.ArrowRight = false;
 
     if (currentScoreEl) currentScoreEl.textContent = score;
     if (timerDisplayEl) timerDisplayEl.textContent = '0s';
@@ -871,7 +844,7 @@ async function checkForUpdates() {
             headers: { 'X-Master-Key': MASTER_KEY }
         });
         let data = await response.json();
-        let onlineVersion = data.record.latestVersion || "2.7";
+        let onlineVersion = data.record.latestVersion || "2.8";
         let changelogItems = data.record.changelog || ["Aggiornamenti generali."];
 
         if (onlineVersion !== LOCAL_INSTALLED_VERSION) {
@@ -880,8 +853,7 @@ async function checkForUpdates() {
             if (changelogList) {
                 changelogList.innerHTML = '';
                 changelogItems.forEach(item => {
-                    let li = document.createElement('li');
-                    li.textContent = item;
+                    let li = document.textContent = item;
                     changelogList.appendChild(li);
                 });
             }
