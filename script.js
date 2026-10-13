@@ -128,11 +128,9 @@ async function loadProgressFromCloud() {
         if (players[pilotId]) {
             let pData = players[pilotId];
             
-            // Prende sempre il punteggio e record più alti disponibili
             totalLifetimeScore = Math.max(totalLifetimeScore, pData.totalScore || 0);
             highScore = Math.max(highScore, pData.highScore || 0);
             
-            // Unisce gli aerei sbloccati tra dispositivi
             if (Array.isArray(pData.unlockedPlanes)) {
                 pData.unlockedPlanes.forEach(id => {
                     if (!unlockedPlanes.includes(id)) unlockedPlanes.push(id);
@@ -143,7 +141,6 @@ async function loadProgressFromCloud() {
                 selectedPlaneId = pData.selectedPlaneId;
             }
 
-            // Aggiorna la memoria locale del browser
             localStorage.setItem('sky_ace_total_score', totalLifetimeScore);
             localStorage.setItem('sky_ace_highscore', highScore);
             localStorage.setItem('sky_ace_unlocked', JSON.stringify(unlockedPlanes));
@@ -217,7 +214,6 @@ window.addEventListener('keyup', (e) => {
 async function runInitialLoading() {
     let progress = 0;
     
-    // Scarica e unifica i dati Cloud all'avvio
     await loadProgressFromCloud();
 
     let interval = setInterval(() => {
@@ -326,60 +322,19 @@ if (restartToMenuBtn) {
     });
 }
 
-// --- CONTROLLI MOBILE ISTANTANEI CON POINTER EVENTS ---
-let joystick = { active: false, identifier: null, startX: 0, startY: 0, vx: 0 };
-const vJoystickEl = document.getElementById('virtualJoystick');
-const knobEl = document.getElementById('joystickKnob');
-
-if (vJoystickEl && knobEl) {
-    vJoystickEl.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        vJoystickEl.setPointerCapture(e.pointerId);
-        joystick.active = true;
-        joystick.identifier = e.pointerId;
-        const rect = vJoystickEl.getBoundingClientRect();
-        joystick.startX = rect.left + rect.width / 2;
-        updateJoystick(e.clientX);
-    }, { passive: false });
-
-    vJoystickEl.addEventListener('pointermove', (e) => {
-        if (!joystick.active || e.pointerId !== joystick.identifier) return;
-        updateJoystick(e.clientX);
-    }, { passive: false });
-
-    const stopJoystick = (e) => {
-        if (e.pointerId === joystick.identifier) {
-            joystick.active = false;
-            joystick.vx = 0;
-            knobEl.style.transform = `translate(0px, 0px)`;
-        }
-    };
-
-    vJoystickEl.addEventListener('pointerup', stopJoystick);
-    vJoystickEl.addEventListener('pointercancel', stopJoystick);
-}
-
-function updateJoystick(clientX) {
-    const maxDist = 30;
-    let dx = clientX - joystick.startX;
-    if (dx > maxDist) dx = maxDist;
-    if (dx < -maxDist) dx = -maxDist;
-    if (knobEl) knobEl.style.transform = `translate(${dx}px, 0px)`;
-    joystick.vx = dx / maxDist;
-}
-
+// --- CONTROLLI MOBILE LATERALI ESTERNI ---
 const leftBtn = document.getElementById('left-btn');
 const rightBtn = document.getElementById('right-btn');
 
 if (leftBtn) {
-    leftBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); keys.ArrowLeft = true; }, { passive: false });
+    leftBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); leftBtn.setPointerCapture(e.pointerId); keys.ArrowLeft = true; }, { passive: false });
     leftBtn.addEventListener('pointerup', (e) => { e.preventDefault(); keys.ArrowLeft = false; }, { passive: false });
     leftBtn.addEventListener('pointerleave', (e) => { e.preventDefault(); keys.ArrowLeft = false; }, { passive: false });
     leftBtn.addEventListener('pointercancel', (e) => { e.preventDefault(); keys.ArrowLeft = false; }, { passive: false });
 }
 
 if (rightBtn) {
-    rightBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); keys.ArrowRight = true; }, { passive: false });
+    rightBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); rightBtn.setPointerCapture(e.pointerId); keys.ArrowRight = true; }, { passive: false });
     rightBtn.addEventListener('pointerup', (e) => { e.preventDefault(); keys.ArrowRight = false; }, { passive: false });
     rightBtn.addEventListener('pointerleave', (e) => { e.preventDefault(); keys.ArrowRight = false; }, { passive: false });
     rightBtn.addEventListener('pointercancel', (e) => { e.preventDefault(); keys.ArrowRight = false; }, { passive: false });
@@ -441,7 +396,7 @@ function renderPlaneGrid() {
 if (openPlaneModalBtn) {
     openPlaneModalBtn.onclick = async () => {
         openPlaneModalBtn.textContent = "Sincronizzazione...";
-        await loadProgressFromCloud(); // Forza il download dei dati aggiornati dal cloud
+        await loadProgressFromCloud();
         openPlaneModalBtn.textContent = "Hangar Aerei ✈️";
 
         renderPlaneGrid();
@@ -513,8 +468,6 @@ function startGame() {
     
     keys.ArrowLeft = false;
     keys.ArrowRight = false;
-    joystick.active = false;
-    joystick.vx = 0;
 
     if (currentScoreEl) currentScoreEl.textContent = score;
     if (timerDisplayEl) timerDisplayEl.textContent = '0s';
@@ -643,7 +596,6 @@ function updateGame() {
 
     if (keys.ArrowLeft) plane.x -= plane.speed;
     if (keys.ArrowRight) plane.x += plane.speed;
-    if (joystick.active) plane.x += joystick.vx * plane.speed;
     plane.x += windForce;
 
     if (plane.x < 0) plane.x = 0;
@@ -780,7 +732,6 @@ function triggerGameOver() {
     totalLifetimeScore += score;
     localStorage.setItem('sky_ace_total_score', totalLifetimeScore);
 
-    // Salva automaticamente i dati aggiornati sul Cloud
     saveProgressToCloud();
 
     if (finalScoreEl) finalScoreEl.textContent = score;
