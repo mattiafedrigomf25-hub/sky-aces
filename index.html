@@ -287,7 +287,6 @@
             margin-top: 6px;
         }
 
-        /* Voce Versione Discreta in Basso */
         .version-info {
             position: absolute;
             bottom: 8px;
@@ -300,7 +299,7 @@
             pointer-events: none;
         }
 
-        /* Controlli Mobile a Latenza Zero */
+        /* Controlli Mobile SEMPRE PRESENTI per reattività IMMEDIATA */
         #mobile-controls {
             position: absolute; 
             bottom: -68px; 
@@ -311,14 +310,13 @@
             padding: 0 5px; 
             box-sizing: border-box; 
             z-index: 25; 
-            opacity: 0;
-            pointer-events: none;
-            transition: none; /* Rimossa ogni transizione graduale per risposta istantanea */
+            opacity: 0.2; /* Visibile in background nel menu, 1 in gioco */
+            pointer-events: auto;
+            touch-action: none;
         }
 
-        #mobile-controls.active-controls {
+        #mobile-controls.in-game-active {
             opacity: 1;
-            pointer-events: auto;
         }
 
         .side-control-btn {
@@ -337,7 +335,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.4);
             user-select: none;
             -webkit-user-select: none;
-            touch-action: none; /* Impedisce qualsiasi zoom o scroll ritardato del browser */
+            touch-action: none;
         }
 
         .side-control-btn:active {
@@ -407,7 +405,7 @@
                 <button id="start-btn" style="background-color: #29b6f6; font-size: 16px; padding: 12px 24px; margin-top: 10px;">AVVIA GIOCO 🚀</button>
                 <p class="start-hint">Usa le frecce ⬅️ ➡️ o i tasti laterali per guidare</p>
                 <div class="sync-info">☁️ Sincronizzazione Cloud Attiva</div>
-                <div class="version-info">v<span id="current-version-label">2.7</span></div>
+                <div class="version-info">v<span id="current-version-label">2.8</span></div>
             </div>
 
             <!-- Modale Hangar -->
@@ -473,7 +471,7 @@
                 <button id="update-action-btn" style="background-color: #69f0ae; color: #1a0b4b;">AGGIORNA ORA</button>
             </div>
 
-            <!-- Controlli Mobile Esterni -->
+            <!-- Controlli Mobile Esterni Sempre Attivi nel DOM -->
             <div id="mobile-controls">
                 <button id="left-btn" class="side-control-btn">⬅️ SINISTRA</button>
                 <button id="right-btn" class="side-control-btn">DESTRA ➡️</button>
