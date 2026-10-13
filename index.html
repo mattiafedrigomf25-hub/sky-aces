@@ -250,7 +250,7 @@
         .plane-slot.selected { border-color: #69f0ae; background: rgba(105, 240, 174, 0.15); }
         .plane-slot.unlockable { border-color: #ff9800; }
 
-        #game-over-screen { justify-content: flex-start; padding-top: 25px; }
+        #game-over-screen { justify-content: flex-start; padding-top: 25px; z-index: 30; }
         #game-over-screen p { font-size: 13px; margin: 5px 0; }
         #save-score-section { margin: 6px 0; }
         #player-name { padding: 6px; border-radius: 4px; border: none; font-size: 14px; margin-right: 5px; width: 130px; }
@@ -330,7 +330,7 @@
             pointer-events: none;
         }
 
-        /* Controlli Mobile totalmente nascosti di default nel menu principale */
+        /* Controlli Mobile */
         #mobile-controls {
             position: absolute; 
             bottom: -68px; 
@@ -344,7 +344,6 @@
             touch-action: none;
         }
 
-        /* Visibili SOLO all'avvio della partita */
         #mobile-controls.in-game-active {
             display: flex !important; 
             opacity: 1;
@@ -409,7 +408,7 @@
                 <div id="countdown-text">3</div>
             </div>
 
-            <!-- 1. SCHERMATA SPLASH (CARICAMENTO INIZIALE) -->
+            <!-- 1. SCHERMATA SPLASH -->
             <div id="splash-screen">
                 <div class="splash-art">🛡️✈️⚡</div>
                 <div class="loading-title">SKY ACE</div>
