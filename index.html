@@ -330,23 +330,23 @@
             pointer-events: none;
         }
 
-        /* Controlli Mobile Esterni */
+        /* Controlli Mobile totalmente nascosti di default nel menu principale */
         #mobile-controls {
             position: absolute; 
             bottom: -68px; 
             left: 0; 
             right: 0;
-            display: flex; 
+            display: none !important; 
             justify-content: space-between; 
             padding: 0 5px; 
             box-sizing: border-box; 
             z-index: 25; 
-            opacity: 0.2;
-            pointer-events: auto;
             touch-action: none;
         }
 
+        /* Visibili SOLO all'avvio della partita */
         #mobile-controls.in-game-active {
+            display: flex !important; 
             opacity: 1;
         }
 
