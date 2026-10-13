@@ -119,7 +119,7 @@
         }
 
         /* Schermate Sovrapposte */
-        #splash-screen, #start-screen, .modal, #pause-popup, #restart-confirm-popup, #game-over-screen, #update-popup, #download-screen {
+        #splash-screen, #start-screen, .modal, #pause-popup, #restart-confirm-popup, #exit-confirm-popup, #game-over-screen, #update-popup, #download-screen {
             position: absolute;
             top: 4px;  
             left: 4px;  
@@ -194,13 +194,13 @@
             font-weight: bold;
         }
 
-        #start-screen h2, .modal h2, #pause-popup h2, #restart-confirm-popup h2, #game-over-screen h2 {
+        #start-screen h2, .modal h2, #pause-popup h2, #restart-confirm-popup h2, #exit-confirm-popup h2, #game-over-screen h2 {
             color: #ffd54f;
             font-size: 24px;
             margin-bottom: 10px;
         }
 
-        #pause-popup p, #restart-confirm-popup p {
+        #pause-popup p, #restart-confirm-popup p, #exit-confirm-popup p {
             font-size: 14px;
             margin-bottom: 20px;
             color: #ddd;
@@ -438,7 +438,7 @@
                     <button id="open-plane-modal-btn" style="background-color: #ab47bc;">Hangar Aerei ✈️</button>
                 </div>
                 <button id="start-btn" style="background-color: #29b6f6; font-size: 16px; padding: 12px 24px; margin-top: 10px;">AVVIA GIOCO 🚀</button>
-                <p class="start-hint">Usa le frecce ⬅️ ➡️ della tastiera per guidare</p>
+                <p class="start-hint">Usa le frecce ⬅️ ➡️ della tastiera o i tasti laterali</p>
                 <div class="sync-info">☁️ Sincronizzazione Cloud Attiva</div>
                 <div class="version-info">v<span id="current-version-label">2.8</span></div>
             </div>
@@ -459,6 +459,7 @@
                 <div class="popup-buttons">
                     <button id="resume-btn" style="background-color: #4caf50;">Riprendi</button>
                     <button id="pause-to-menu-btn" style="background-color: #512da8;">Torna al Menù</button>
+                    <button id="pause-exit-btn" style="background-color: #d32f2f;">Esci dal Gioco 🚪</button>
                 </div>
             </div>
 
@@ -469,7 +470,18 @@
                 <div class="popup-buttons">
                     <button id="confirm-restart-btn" style="background-color: #e53935;">Ricomincia la partita</button>
                     <button id="restart-to-menu-btn" style="background-color: #512da8;">Torna al menù</button>
+                    <button id="restart-exit-btn" style="background-color: #d32f2f;">Esci dal Gioco 🚪</button>
                     <button id="cancel-restart-btn" style="background-color: #757575;">Annulla</button>
+                </div>
+            </div>
+
+            <!-- Pop-up Conferma Uscita (Attivato dal tasto Indietro Android) -->
+            <div id="exit-confirm-popup" class="hidden" style="z-index: 50;">
+                <h2>USCIRE DAL GIOCO?</h2>
+                <p>Sei sicuro di voler uscire da Sky Ace?</p>
+                <div class="popup-buttons">
+                    <button id="confirm-exit-btn" style="background-color: #e53935;">SÌ, ESCI</button>
+                    <button id="cancel-exit-btn" style="background-color: #4caf50;">NO, CONTINUA</button>
                 </div>
             </div>
 
