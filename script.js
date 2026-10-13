@@ -74,7 +74,7 @@ const PLANES_DATA = [
     { id: 9, emoji: '✈️', name: 'Aereo Acrobatico', points: 1800 }
 ];
 
-// ID condiviso unico per sincronizzare PC e Telefono sullo stesso profilo
+// ID condiviso unico per sincronizzare PC e Telefono sullo stesso profilo master
 const pilotId = 'PILOTA_MASTER';
 
 let totalLifetimeScore = parseInt(localStorage.getItem('sky_ace_total_score')) || 0;
@@ -128,7 +128,7 @@ async function loadProgressFromCloud() {
         if (players[pilotId]) {
             let pData = players[pilotId];
             
-            // Prende sempre il punteggio più alto disponibile
+            // Prende sempre il punteggio e record più alti disponibili
             totalLifetimeScore = Math.max(totalLifetimeScore, pData.totalScore || 0);
             highScore = Math.max(highScore, pData.highScore || 0);
             
@@ -143,7 +143,7 @@ async function loadProgressFromCloud() {
                 selectedPlaneId = pData.selectedPlaneId;
             }
 
-            // Aggiorna la memoria del browser
+            // Aggiorna la memoria locale del browser
             localStorage.setItem('sky_ace_total_score', totalLifetimeScore);
             localStorage.setItem('sky_ace_highscore', highScore);
             localStorage.setItem('sky_ace_unlocked', JSON.stringify(unlockedPlanes));
@@ -439,7 +439,11 @@ function renderPlaneGrid() {
 }
 
 if (openPlaneModalBtn) {
-    openPlaneModalBtn.onclick = () => {
+    openPlaneModalBtn.onclick = async () => {
+        openPlaneModalBtn.textContent = "Sincronizzazione...";
+        await loadProgressFromCloud(); // Forza il download dei dati aggiornati dal cloud
+        openPlaneModalBtn.textContent = "Hangar Aerei ✈️";
+
         renderPlaneGrid();
         let totalScoreDisplay = document.getElementById('total-score-display');
         if (!totalScoreDisplay && planeModal) {
