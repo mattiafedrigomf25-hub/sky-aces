@@ -294,7 +294,7 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
-// --- CARICAMENTO INIZIALE ---
+// --- SEQUENZA DI AVVIO: PRIMA VERIFICA AGGIORNAMENTO, POI NOME PILOTA ---
 async function runInitialLoading() {
     let progress = 0;
     
@@ -306,18 +306,86 @@ async function runInitialLoading() {
             setTimeout(async () => {
                 if (splashScreen) splashScreen.classList.add('hidden');
                 
-                if (!pilotId) {
-                    if (loginScreen) loginScreen.classList.remove('hidden');
-                } else {
-                    if (startPilotName) startPilotName.textContent = pilotId;
-                    await loadProgressFromCloud();
-                    checkForUpdates();
+                // 1. Controlla prima se c'è un aggiornamento online
+                let hasUpdate = await checkForUpdates();
+                
+                // 2. Se NON c'è aggiornamento, continua con la normale procedura
+                if (!hasUpdate) {
+                    proceedToGameOrLogin();
                 }
             }, 200);
         }
         if (splashProgressBar) splashProgressBar.style.width = progress + '%';
         if (splashProgressText) splashProgressText.textContent = progress + '%';
     }, 50);
+}
+
+// Funzione di proseguimento dopo il check aggiornamenti
+async function proceedToGameOrLogin() {
+    if (!pilotId) {
+        if (loginScreen) loginScreen.classList.remove('hidden');
+    } else {
+        if (startPilotName) startPilotName.textContent = pilotId;
+        await loadProgressFromCloud();
+        if (startScreen) startScreen.classList.remove('hidden');
+    }
+}
+
+// --- CONTROLLO AGGIORNAMENTI ONLINE (ESEGUITO PER PRIMO) ---
+async function checkForUpdates() {
+    try {
+        let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+            headers: { 'X-Master-Key': MASTER_KEY }
+        });
+        let data = await response.json();
+        let onlineVersion = data.record.latestVersion || CURRENT_GAME_VERSION;
+        let changelogItems = data.record.changelog || ["Aggiornamenti generali."];
+
+        let installedVer = localStorage.getItem('sky_ace_installed_version') || CURRENT_GAME_VERSION;
+
+        if (onlineVersion !== installedVer) {
+            onlineVersionToInstall = onlineVersion;
+            if (changelogTitle) changelogTitle.textContent = `Novità della versione ${onlineVersion}:`;
+            if (changelogList) {
+                changelogList.innerHTML = '';
+                changelogItems.forEach(item => {
+                    let li = document.createElement('li');
+                    li.textContent = item;
+                    changelogList.appendChild(li);
+                });
+            }
+            if (updatePopup) updatePopup.classList.remove('hidden');
+            return true; // Trovato aggiornamento
+        }
+        return false; // Nessun aggiornamento
+    } catch (error) {
+        return false;
+    }
+}
+
+// --- FLUSSO AGGIORNAMENTO E DOWNLOAD ---
+if (updateActionBtn) {
+    updateActionBtn.addEventListener('click', () => {
+        if (updatePopup) updatePopup.classList.add('hidden');
+        if (downloadScreen) downloadScreen.classList.remove('hidden');
+        
+        let progress = 0;
+        let interval = setInterval(() => {
+            progress += Math.floor(Math.random() * 10) + 4;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(interval);
+                setTimeout(() => {
+                    localStorage.setItem('sky_ace_installed_version', onlineVersionToInstall || CURRENT_GAME_VERSION);
+                    if (downloadScreen) downloadScreen.classList.add('hidden');
+                    // Dopo l'aggiornamento, procede al Login o al Gioco
+                    proceedToGameOrLogin();
+                }, 500);
+            }
+            if (downloadProgressBar) downloadProgressBar.style.width = progress + '%';
+            if (downloadProgressText) downloadProgressText.textContent = progress + '%';
+        }, 120);
+    });
 }
 
 // --- GESTIONE LOGIN PILOTA ---
@@ -339,30 +407,7 @@ if (savePilotBtn) {
         await loadProgressFromCloud();
         
         if (loginScreen) loginScreen.classList.add('hidden');
-        checkForUpdates();
-    });
-}
-
-// --- FLUSSO AGGIORNAMENTO E DOWNLOAD ---
-if (updateActionBtn) {
-    updateActionBtn.addEventListener('click', () => {
-        if (updatePopup) updatePopup.classList.add('hidden');
-        if (downloadScreen) downloadScreen.classList.remove('hidden');
-        
-        let progress = 0;
-        let interval = setInterval(() => {
-            progress += Math.floor(Math.random() * 10) + 4;
-            if (progress >= 100) {
-                progress = 100;
-                clearInterval(interval);
-                setTimeout(() => {
-                    localStorage.setItem('sky_ace_installed_version', onlineVersionToInstall || CURRENT_GAME_VERSION);
-                    window.location.reload();
-                }, 500);
-            }
-            if (downloadProgressBar) downloadProgressBar.style.width = progress + '%';
-            if (downloadProgressText) downloadProgressText.textContent = progress + '%';
-        }, 120);
+        if (startScreen) startScreen.classList.remove('hidden');
     });
 }
 
@@ -1009,38 +1054,6 @@ if (menuBtn) {
         updateMobileControlsVisibility(false);
         if (startScreen) startScreen.classList.remove('hidden');
     });
-}
-
-// --- CONTROLLO AGGIORNAMENTI ONLINE ---
-async function checkForUpdates() {
-    try {
-        let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-            headers: { 'X-Master-Key': MASTER_KEY }
-        });
-        let data = await response.json();
-        let onlineVersion = data.record.latestVersion || CURRENT_GAME_VERSION;
-        let changelogItems = data.record.changelog || ["Aggiornamenti generali."];
-
-        let installedVer = localStorage.getItem('sky_ace_installed_version') || CURRENT_GAME_VERSION;
-
-        if (onlineVersion !== installedVer) {
-            onlineVersionToInstall = onlineVersion;
-            if (changelogTitle) changelogTitle.textContent = `Novità della versione ${onlineVersion}:`;
-            if (changelogList) {
-                changelogList.innerHTML = '';
-                changelogItems.forEach(item => {
-                    let li = document.createElement('li');
-                    li.textContent = item;
-                    changelogList.appendChild(li);
-                });
-            }
-            if (updatePopup) updatePopup.classList.remove('hidden');
-        } else {
-            if (startScreen) startScreen.classList.remove('hidden');
-        }
-    } catch (error) {
-        if (startScreen) startScreen.classList.remove('hidden');
-    }
 }
 
 draw();
