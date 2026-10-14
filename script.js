@@ -1,3 +1,10 @@
+// --- RESET GLOBALE AUTOMATICO AL PASSAGGIO ALLA VERSIONE 3.0 ---
+const CURRENT_GAME_VERSION = "3.0";
+if (localStorage.getItem('sky_ace_installed_version') !== CURRENT_GAME_VERSION) {
+    localStorage.clear();
+    localStorage.setItem('sky_ace_installed_version', CURRENT_GAME_VERSION);
+}
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const currentScoreEl = document.getElementById('current-score');
@@ -61,11 +68,9 @@ const changelogList = document.getElementById('changelog-list');
 const changelogTitle = document.getElementById('changelog-title');
 const currentVersionLabel = document.getElementById('current-version-label');
 
-// Versione installata sul browser
-const LOCAL_INSTALLED_VERSION = localStorage.getItem('sky_ace_installed_version') || "2.8";
-if (currentVersionLabel) currentVersionLabel.textContent = LOCAL_INSTALLED_VERSION;
+if (currentVersionLabel) currentVersionLabel.textContent = CURRENT_GAME_VERSION;
 
-if (localStorage.getItem('sky_ace_installed_version') && inGameButtons) {
+if (inGameButtons) {
     inGameButtons.style.display = 'flex';
 }
 
@@ -336,7 +341,7 @@ if (updateActionBtn) {
                     if (onlineVersionToInstall) {
                         localStorage.setItem('sky_ace_installed_version', onlineVersionToInstall);
                     } else {
-                        localStorage.setItem('sky_ace_installed_version', "2.8");
+                        localStorage.setItem('sky_ace_installed_version', CURRENT_GAME_VERSION);
                     }
                     window.location.reload();
                 }, 500);
@@ -998,16 +1003,16 @@ async function checkForUpdates() {
             headers: { 'X-Master-Key': MASTER_KEY }
         });
         let data = await response.json();
-        let onlineVersion = data.record.latestVersion || "2.8";
+        let onlineVersion = data.record.latestVersion || CURRENT_GAME_VERSION;
         let changelogItems = data.record.changelog || ["Aggiornamenti generali."];
 
-        if (onlineVersion !== LOCAL_INSTALLED_VERSION) {
+        if (onlineVersion !== CURRENT_GAME_VERSION) {
             onlineVersionToInstall = onlineVersion;
             if (changelogTitle) changelogTitle.textContent = `Novità della versione ${onlineVersion}:`;
             if (changelogList) {
                 changelogList.innerHTML = '';
                 changelogItems.forEach(item => {
-                    let li = document.label = document.createElement('li');
+                    let li = document.createElement('li');
                     li.textContent = item;
                     changelogList.appendChild(li);
                 });
