@@ -116,7 +116,9 @@ async function saveProgressToCloud() {
         
         if (!record.players) record.players = {};
         
-        record.players[pilotId.toUpperCase()] = {
+        // Salviamo sempre il nome convertito in maiuscolo per evitare discrepanze
+        let key = pilotId.trim().toUpperCase();
+        record.players[key] = {
             totalScore: totalLifetimeScore,
             highScore: highScore,
             unlockedPlanes: unlockedPlanes,
@@ -145,10 +147,11 @@ async function loadProgressFromCloud() {
         let data = await response.json();
         let players = data.record.players || {};
 
-        let key = pilotId.toUpperCase();
+        let key = pilotId.trim().toUpperCase();
         if (players[key]) {
             let pData = players[key];
             
+            // Sincronizza ed eleva i punteggi al valore massimo presente nel cloud o in locale
             totalLifetimeScore = Math.max(totalLifetimeScore, pData.totalScore || 0);
             highScore = Math.max(highScore, pData.highScore || 0);
             
@@ -169,6 +172,9 @@ async function loadProgressFromCloud() {
 
             if (recordDisplayEl) recordDisplayEl.textContent = highScore;
             if (plane) plane.emoji = PLANES_DATA[selectedPlaneId].emoji;
+        } else {
+            // Se il giocatore non esiste ancora sul Cloud per quel nome, lo crea con i dati attuali
+            await saveProgressToCloud();
         }
     } catch (e) {}
 }
@@ -294,7 +300,7 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
-// --- SEQUENZA DI AVVIO: PRIMA VERIFICA AGGIORNAMENTO, POI NOME PILOTA ---
+// --- SEQUENZA DI AVVIO ---
 async function runInitialLoading() {
     let progress = 0;
     
@@ -306,10 +312,7 @@ async function runInitialLoading() {
             setTimeout(async () => {
                 if (splashScreen) splashScreen.classList.add('hidden');
                 
-                // 1. Controlla prima se c'è un aggiornamento online
                 let hasUpdate = await checkForUpdates();
-                
-                // 2. Se NON c'è aggiornamento, continua con la normale procedura
                 if (!hasUpdate) {
                     proceedToGameOrLogin();
                 }
@@ -320,7 +323,6 @@ async function runInitialLoading() {
     }, 50);
 }
 
-// Funzione di proseguimento dopo il check aggiornamenti
 async function proceedToGameOrLogin() {
     if (!pilotId) {
         if (loginScreen) loginScreen.classList.remove('hidden');
@@ -331,7 +333,7 @@ async function proceedToGameOrLogin() {
     }
 }
 
-// --- CONTROLLO AGGIORNAMENTI ONLINE (ESEGUITO PER PRIMO) ---
+// --- CONTROLLO AGGIORNAMENTI ONLINE ---
 async function checkForUpdates() {
     try {
         let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
@@ -355,15 +357,14 @@ async function checkForUpdates() {
                 });
             }
             if (updatePopup) updatePopup.classList.remove('hidden');
-            return true; // Trovato aggiornamento
+            return true;
         }
-        return false; // Nessun aggiornamento
+        return false;
     } catch (error) {
         return false;
     }
 }
 
-// --- FLUSSO AGGIORNAMENTO E DOWNLOAD ---
 if (updateActionBtn) {
     updateActionBtn.addEventListener('click', () => {
         if (updatePopup) updatePopup.classList.add('hidden');
@@ -378,7 +379,6 @@ if (updateActionBtn) {
                 setTimeout(() => {
                     localStorage.setItem('sky_ace_installed_version', onlineVersionToInstall || CURRENT_GAME_VERSION);
                     if (downloadScreen) downloadScreen.classList.add('hidden');
-                    // Dopo l'aggiornamento, procede al Login o al Gioco
                     proceedToGameOrLogin();
                 }, 500);
             }
@@ -388,7 +388,7 @@ if (updateActionBtn) {
     });
 }
 
-// --- GESTIONE LOGIN PILOTA ---
+// --- GESTIONE LOGIN PILOTA CON CARICAMENTO IMMEDIATO ---
 if (savePilotBtn) {
     savePilotBtn.addEventListener('click', async () => {
         let name = loginPilotInput ? loginPilotInput.value.trim() : "";
@@ -402,9 +402,12 @@ if (savePilotBtn) {
         if (playerNameInput) playerNameInput.value = pilotId;
         
         savePilotBtn.disabled = true;
-        savePilotBtn.textContent = "Caricamento...";
+        savePilotBtn.textContent = "Sincronizzazione Cloud...";
         
         await loadProgressFromCloud();
+        
+        savePilotBtn.disabled = false;
+        savePilotBtn.textContent = "CONFERMA E ENTRA 🚀";
         
         if (loginScreen) loginScreen.classList.add('hidden');
         if (startScreen) startScreen.classList.remove('hidden');
@@ -601,7 +604,7 @@ if (openPlaneModalBtn) {
 if (changePilotIdBtn) {
     changePilotIdBtn.onclick = async () => {
         let newName = prompt("Inserisci il tuo Nome Pilota per caricare il tuo profilo:", pilotId);
-        if (newName && newName.trim() !== "" && newName.trim() !== pilotId) {
+        if (newName && newName.trim() !== "" && newName.trim().toUpperCase() !== pilotId.toUpperCase()) {
             pilotId = newName.trim();
             localStorage.setItem('sky_ace_pilot_name', pilotId);
             if (displayPilotId) displayPilotId.textContent = pilotId;
