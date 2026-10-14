@@ -52,6 +52,8 @@ const openPlaneModalBtn = document.getElementById('open-plane-modal-btn');
 const closePlaneModalBtn = document.getElementById('close-plane-modal-btn');
 const planeModal = document.getElementById('plane-modal');
 const planeGrid = document.getElementById('plane-grid');
+const displayPilotId = document.getElementById('display-pilot-id');
+const changePilotIdBtn = document.getElementById('change-pilot-id-btn');
 
 const updatePopup = document.getElementById('update-popup');
 const updateActionBtn = document.getElementById('update-action-btn');
@@ -85,7 +87,17 @@ const PLANES_DATA = [
     { id: 9, emoji: '✈️', name: 'Aereo Acrobatico', points: 1800 }
 ];
 
-const pilotId = 'PILOTA_MASTER';
+// --- GESTIONE ID PILOTA UNICO ED INDIPENDENTE ---
+function getOrCreatePilotId() {
+    let id = localStorage.getItem('sky_ace_pilot_id');
+    if (!id) {
+        id = 'PILOTA-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+        localStorage.setItem('sky_ace_pilot_id', id);
+    }
+    return id;
+}
+
+let pilotId = getOrCreatePilotId();
 
 let totalLifetimeScore = parseInt(localStorage.getItem('sky_ace_total_score')) || 0;
 let highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
@@ -96,7 +108,7 @@ let timerDisplayEl = document.getElementById('timer-display');
 let recordDisplayEl = document.getElementById('record-display');
 if (recordDisplayEl) recordDisplayEl.textContent = highScore;
 
-// --- FUNZIONE PER SALVARE IL PROGRESSO SUL CLOUD (JSONBIN) ---
+// --- FUNZIONE PER SALVARE IL PROGRESSO SUL CLOUD PERSONALE ---
 async function saveProgressToCloud() {
     try {
         let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
@@ -126,7 +138,7 @@ async function saveProgressToCloud() {
     } catch (e) {}
 }
 
-// --- FUNZIONE PER CARICARE E UNIFICARE IL PROGRESSO DAL CLOUD ---
+// --- FUNZIONE PER CARICARE IL PROGRESSO DAL CLOUD PERSONALE ---
 async function loadProgressFromCloud() {
     try {
         let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
@@ -226,7 +238,7 @@ function isMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
 }
 
-// --- GESTIONE USCITA E TASTO INDIETRO ANDROID ---
+// --- GESTIONE USCITA E TASTO INDIETRO ---
 function pushDummyState() {
     history.pushState({ page: 'game' }, '', window.location.href);
 }
@@ -236,7 +248,7 @@ window.addEventListener('load', () => {
 });
 
 window.addEventListener('popstate', (e) => {
-    pushDummyState(); // Mantiene la storia fittizia
+    pushDummyState();
     promptExitGame();
 });
 
@@ -250,7 +262,6 @@ function promptExitGame() {
 function closeExitPrompt() {
     if (exitConfirmPopup) exitConfirmPopup.classList.add('hidden');
     if (gameRunning) {
-        // Mostra la pausa per sicurezza quando si rifiuta l'uscita
         if (pausePopup) pausePopup.classList.remove('hidden');
     }
 }
@@ -267,7 +278,6 @@ function executeExitGame() {
     if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
     if (gameOverScreen) gameOverScreen.classList.add('hidden');
     
-    // Ritorna allo SplashScreen per un caricamento pulito
     if (splashScreen) splashScreen.classList.remove('hidden');
     if (startScreen) startScreen.classList.add('hidden');
     
@@ -279,7 +289,7 @@ if (cancelExitBtn) cancelExitBtn.addEventListener('click', closeExitPrompt);
 if (pauseExitBtn) pauseExitBtn.addEventListener('click', promptExitGame);
 if (restartExitBtn) restartExitBtn.addEventListener('click', promptExitGame);
 
-// --- GESTIONE USCITA IN BACKGROUND (METTE IN PAUSA SE RIENTRI) ---
+// --- GESTIONE USCITA IN BACKGROUND ---
 document.addEventListener('visibilitychange', () => {
     if (document.hidden && gameRunning && !gamePaused && !isCountdownActive) {
         gamePaused = true;
@@ -505,6 +515,8 @@ if (openPlaneModalBtn) {
         await loadProgressFromCloud();
         openPlaneModalBtn.textContent = "Hangar Aerei ✈️";
 
+        if (displayPilotId) displayPilotId.textContent = pilotId;
+
         renderPlaneGrid();
         let totalScoreDisplay = document.getElementById('total-score-display');
         if (!totalScoreDisplay && planeModal) {
@@ -519,6 +531,21 @@ if (openPlaneModalBtn) {
         }
         if (totalScoreDisplay) totalScoreDisplay.textContent = `Punti Totali Accumulati: ${totalLifetimeScore} pt`;
         if (planeModal) planeModal.classList.remove('hidden');
+    };
+}
+
+if (changePilotIdBtn) {
+    changePilotIdBtn.onclick = async () => {
+        let newId = prompt("Inserisci il tuo Codice Cloud personale per sincronizzare questo dispositivo:", pilotId);
+        if (newId && newId.trim() !== "" && newId !== pilotId) {
+            pilotId = newId.trim().toUpperCase();
+            localStorage.setItem('sky_ace_pilot_id', pilotId);
+            if (displayPilotId) displayPilotId.textContent = pilotId;
+            
+            alert("Codice aggiornato! Sincronizzazione in corso...");
+            await loadProgressFromCloud();
+            renderPlaneGrid();
+        }
     };
 }
 
@@ -980,7 +1007,7 @@ async function checkForUpdates() {
             if (changelogList) {
                 changelogList.innerHTML = '';
                 changelogItems.forEach(item => {
-                    let li = document.createElement('li');
+                    let li = document.label = document.createElement('li');
                     li.textContent = item;
                     changelogList.appendChild(li);
                 });
