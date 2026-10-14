@@ -1,96 +1,44 @@
-const CURRENT_GAME_VERSION = "3.3";
+// --- ELEMENTI SCHERMATA DI USCITA / ARRIVEDERCI ---
+const mainExitBtn = document.getElementById('main-exit-btn');
+const goodbyeScreen = document.getElementById('goodbye-screen');
+const goodbyeMessage = document.getElementById('goodbye-message');
 
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const currentScoreEl = document.getElementById('current-score');
-const livesEl = document.getElementById('lives-display');
+function triggerGameExit() {
+    gameRunning = false;
+    gameStarted = false;
+    gamePaused = false;
+    
+    updateMobileControlsVisibility(false);
 
-// Schermate Principali
-const splashScreen = document.getElementById('splash-screen');
-const splashProgressBar = document.getElementById('splash-progress-bar');
-const splashProgressText = document.getElementById('splash-progress-text');
+    // Nascondi tutte le schermate e i modali attivi
+    if (startScreen) startScreen.classList.add('hidden');
+    if (pausePopup) pausePopup.classList.add('hidden');
+    if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
+    if (gameOverScreen) gameOverScreen.classList.add('hidden');
+    if (planeModal) planeModal.classList.add('hidden');
+    if (updatePopup) updatePopup.classList.add('hidden');
+    if (loginScreen) loginScreen.classList.add('hidden');
+    if (splashScreen) splashScreen.classList.add('hidden');
+    if (downloadScreen) downloadScreen.classList.add('hidden');
 
-const loginScreen = document.getElementById('login-screen');
-const loginPilotInput = document.getElementById('login-pilot-input');
-const savePilotBtn = document.getElementById('save-pilot-btn');
-const startPilotName = document.getElementById('start-pilot-name');
+    // Imposta il messaggio di saluto con il nome del pilota
+    if (goodbyeMessage) {
+        goodbyeMessage.textContent = `Grazie per aver volato con noi, Comandante ${pilotId || 'Pilota'}! A presto. 👋`;
+    }
 
-const downloadScreen = document.getElementById('download-screen');
-const downloadProgressBar = document.getElementById('download-progress-bar');
-const downloadProgressText = document.getElementById('download-progress-text');
+    // Mostra la schermata finale di arrivederci
+    if (goodbyeScreen) goodbyeScreen.classList.remove('hidden');
 
-const startScreen = document.getElementById('start-screen');
-const startBtn = document.getElementById('start-btn');
-const gameOverScreen = document.getElementById('game-over-screen');
-const finalScoreEl = document.getElementById('final-score');
-const playerNameInput = document.getElementById('player-name');
-const saveBtn = document.getElementById('save-btn');
-const restartBtn = document.getElementById('restart-btn');
-const menuBtn = document.getElementById('menu-btn');
-const leaderboardList = document.getElementById('leaderboard-list');
-const saveScoreSection = document.getElementById('save-score-section');
-
-// Elementi Countdown Overlay
-const countdownOverlay = document.getElementById('countdown-overlay');
-const countdownText = document.getElementById('countdown-text');
-
-// Elementi In-Game
-const inGameButtons = document.getElementById('in-game-buttons');
-const pauseBtn = document.getElementById('pause-btn');
-const pausePopup = document.getElementById('pause-popup');
-const resumeBtn = document.getElementById('resume-btn');
-const pauseToMenuBtn = document.getElementById('pause-to-menu-btn');
-const pauseExitBtn = document.getElementById('pause-exit-btn');
-
-const restartPromptBtn = document.getElementById('restart-prompt-btn');
-const restartConfirmPopup = document.getElementById('restart-confirm-popup');
-const confirmRestartBtn = document.getElementById('confirm-restart-btn');
-const restartToMenuBtn = document.getElementById('restart-to-menu-btn');
-const restartExitBtn = document.getElementById('restart-exit-btn');
-const cancelRestartBtn = document.getElementById('cancel-restart-btn');
-
-// Pop-up Uscita
-const exitConfirmPopup = document.getElementById('exit-confirm-popup');
-const confirmExitBtn = document.getElementById('confirm-exit-btn');
-const cancelExitBtn = document.getElementById('cancel-exit-btn');
-
-// Hangar e Update
-const openPlaneModalBtn = document.getElementById('open-plane-modal-btn');
-const closePlaneModalBtn = document.getElementById('close-plane-modal-btn');
-const planeModal = document.getElementById('plane-modal');
-const planeGrid = document.getElementById('plane-grid');
-const displayPilotId = document.getElementById('display-pilot-id');
-const changePilotIdBtn = document.getElementById('change-pilot-id-btn');
-
-const updatePopup = document.getElementById('update-popup');
-const updateActionBtn = document.getElementById('update-action-btn');
-const changelogList = document.getElementById('changelog-list');
-const changelogTitle = document.getElementById('changelog-title');
-const currentVersionLabel = document.getElementById('current-version-label');
-
-if (currentVersionLabel) currentVersionLabel.textContent = CURRENT_GAME_VERSION;
-
-if (inGameButtons) {
-    inGameButtons.style.display = 'flex';
+    // Tenta la chiusura automatica (se supportata da PWA / WebView / finestre pop-up)
+    try {
+        window.close();
+    } catch (e) {}
 }
 
-const BIN_ID = '6ac4b87cffd5d1605351f58d';
-const MASTER_KEY = '$2a$10$aplyk/beh6fEjv43q.yWK.yNbASVpWB2lHxQ8.O3c9aj0.zzW4Kuu';
-
-let onlineVersionToInstall = null;
-
-const PLANES_DATA = [
-    { id: 0, emoji: '✈️', name: 'Aereo di Linea', points: 0 },
-    { id: 1, emoji: '🛩️', name: 'Monomotore', points: 200 },
-    { id: 2, emoji: '🛫', name: 'Jet', points: 400 },
-    { id: 3, emoji: '🛬', name: 'Caccia', points: 600 },
-    { id: 4, emoji: '🚁', name: 'Biposto', points: 800 },
-    { id: 5, emoji: '✈️', name: 'Fighter', points: 1000 },
-    { id: 6, emoji: '🛩️', name: 'Bimotore', points: 1200 },
-    { id: 7, emoji: '🛫', name: 'Idrovolante', points: 1400 },
-    { id: 8, emoji: '🛬', name: 'Jet Supersonico', points: 1600 },
-    { id: 9, emoji: '✈️', name: 'Aereo Acrobatico', points: 1800 }
-];
+// Event Listener per il tasto "Esci dal Gioco" nel menu principale
+if (mainExitBtn) {
+    mainExitBtn.addEventListener('click', triggerGameExit);
+}
 
 // --- GESTIONE PILOTA ED IDENTIFICATIVO ---
 let pilotId = localStorage.getItem('sky_ace_pilot_name') || "";
@@ -240,57 +188,7 @@ function isMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
 }
 
-// --- GESTIONE USCITA E INDIETRO ---
-function pushDummyState() {
-    history.pushState({ page: 'game' }, '', window.location.href);
-}
-
-window.addEventListener('load', () => {
-    pushDummyState();
-});
-
-window.addEventListener('popstate', (e) => {
-    pushDummyState();
-    promptExitGame();
-});
-
-function promptExitGame() {
-    if (gameRunning && !gamePaused) {
-        gamePaused = true;
-    }
-    if (exitConfirmPopup) exitConfirmPopup.classList.remove('hidden');
-}
-
-function closeExitPrompt() {
-    if (exitConfirmPopup) exitConfirmPopup.classList.add('hidden');
-    if (gameRunning) {
-        if (pausePopup) pausePopup.classList.remove('hidden');
-    }
-}
-
-function executeExitGame() {
-    gameRunning = false;
-    gameStarted = false;
-    gamePaused = false;
-    
-    updateMobileControlsVisibility(false);
-    
-    if (exitConfirmPopup) exitConfirmPopup.classList.add('hidden');
-    if (pausePopup) pausePopup.classList.add('hidden');
-    if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
-    if (gameOverScreen) gameOverScreen.classList.add('hidden');
-    
-    if (splashScreen) splashScreen.classList.remove('hidden');
-    if (startScreen) startScreen.classList.add('hidden');
-    
-    runInitialLoading();
-}
-
-if (confirmExitBtn) confirmExitBtn.addEventListener('click', executeExitGame);
-if (cancelExitBtn) cancelExitBtn.addEventListener('click', closeExitPrompt);
-if (pauseExitBtn) pauseExitBtn.addEventListener('click', promptExitGame);
-if (restartExitBtn) restartExitBtn.addEventListener('click', promptExitGame);
-
+// --- GESTIONE PAUSA CON VISIBILITY CHANGE ---
 document.addEventListener('visibilitychange', () => {
     if (document.hidden && gameRunning && !gamePaused && !isCountdownActive) {
         gamePaused = true;
@@ -671,7 +569,6 @@ function startGame() {
     if (gameOverScreen) gameOverScreen.classList.add('hidden');
     if (pausePopup) pausePopup.classList.add('hidden');
     if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
-    if (exitConfirmPopup) exitConfirmPopup.classList.add('hidden');
     
     updateMobileControlsVisibility(true);
 
