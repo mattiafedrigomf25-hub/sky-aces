@@ -302,7 +302,7 @@
 
         #update-popup {
             background-color: rgba(13, 2, 33, 0.98);
-            z-index: 30;
+            z-index: 50;
             text-align: center;
         }
         #update-popup h2 { color: #69f0ae; font-size: 22px; margin-bottom: 8px; }
@@ -423,19 +423,26 @@
             <div id="splash-screen">
                 <div class="splash-art">🛡️✈️⚡</div>
                 <div class="loading-title">SKY ACE</div>
-                <div class="loading-subtitle" id="splash-status">Sincronizzazione dati Cloud...</div>
+                <div class="loading-subtitle" id="splash-status">Verifica aggiornamenti...</div>
                 <div class="progress-bar-container">
                     <div id="splash-progress-bar" class="progress-bar"></div>
                 </div>
                 <div id="splash-progress-text" class="progress-text">0%</div>
             </div>
 
-            <!-- 2. SCHERMATA LOGIN PILOTA -->
-            <div id="login-screen" class="hidden">
-                <h2>IDENTIFICAZIONE PILOTA</h2>
-                <p>Inserisci il tuo nome per sincronizzare i tuoi progressi su qualsiasi dispositivo:</p>
-                <input type="text" id="login-pilot-input" placeholder="Es. Mattia" maxlength="15">
-                <button id="save-pilot-btn" style="margin-top: 15px; background-color: #69f0ae; color: #1a0b4b;">CONFERMA E ENTRA 🚀</button>
+            <!-- 2. SCHERMATA POP-UP AGGIORNAMENTO (Ora prioritaria) -->
+            <div id="update-popup" class="hidden">
+                <h2>🚀 NUOVA VERSIONE DISPONIBILE!</h2>
+                <p>È stato rilasciato un aggiornamento per <strong>Sky Ace</strong>.</p>
+                
+                <div class="changelog-box">
+                    <h4 id="changelog-title">Novità della versione:</h4>
+                    <ul id="changelog-list">
+                        <li>Caricamento delle nuove funzionalità di gioco.</li>
+                    </ul>
+                </div>
+
+                <button id="update-action-btn" style="background-color: #69f0ae; color: #1a0b4b;">AGGIORNA ORA</button>
             </div>
 
             <!-- 3. SCHERMATA DOWNLOAD AGGIORNAMENTO -->
@@ -449,7 +456,15 @@
                 <div id="download-progress-text" class="progress-text">0%</div>
             </div>
 
-            <!-- 4. SCHERMATA DI AVVIO / MENU -->
+            <!-- 4. SCHERMATA LOGIN PILOTA (Appare dopo aggiornamento se prima volta) -->
+            <div id="login-screen" class="hidden">
+                <h2>IDENTIFICAZIONE PILOTA</h2>
+                <p>Inserisci il tuo nome per sincronizzare i tuoi progressi su qualsiasi dispositivo:</p>
+                <input type="text" id="login-pilot-input" placeholder="Es. Mattia" maxlength="15">
+                <button id="save-pilot-btn" style="margin-top: 15px; background-color: #69f0ae; color: #1a0b4b;">CONFERMA E ENTRA 🚀</button>
+            </div>
+
+            <!-- 5. SCHERMATA DI AVVIO / MENU -->
             <div id="start-screen" class="hidden">
                 <h2>SKY ACE</h2>
                 <p>Schiva i fulmini, abbatti i caccia nemici e raccogli i bonus!</p>
@@ -527,21 +542,6 @@
                     <button id="restart-btn" style="background-color: #ff5252;">Riprova</button>
                     <button id="menu-btn" style="background-color: #4caf50;">Menù Principale</button>
                 </div>
-            </div>
-
-            <!-- Pop-up di Aggiornamento -->
-            <div id="update-popup" class="hidden">
-                <h2>🚀 NUOVA VERSIONE DISPONIBILE!</h2>
-                <p>È stato rilasciato un aggiornamento per <strong>Sky Ace</strong>.</p>
-                
-                <div class="changelog-box">
-                    <h4 id="changelog-title">Novità della versione:</h4>
-                    <ul id="changelog-list">
-                        <li>Caricamento delle nuove funzionalità di gioco.</li>
-                    </ul>
-                </div>
-
-                <button id="update-action-btn" style="background-color: #69f0ae; color: #1a0b4b;">AGGIORNA ORA</button>
             </div>
 
             <!-- Controlli Mobile Esterni -->
