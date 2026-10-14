@@ -1,4 +1,4 @@
-const CURRENT_GAME_VERSION = "3.3";
+const CURRENT_GAME_VERSION = "3.2";
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
