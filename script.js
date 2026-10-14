@@ -1,9 +1,4 @@
-// --- RESET GLOBALE AUTOMATICO AL PASSAGGIO ALLA VERSIONE 3.0 ---
-const CURRENT_GAME_VERSION = "3.0";
-if (localStorage.getItem('sky_ace_installed_version') !== CURRENT_GAME_VERSION) {
-    localStorage.clear();
-    localStorage.setItem('sky_ace_installed_version', CURRENT_GAME_VERSION);
-}
+const CURRENT_GAME_VERSION = "3.1";
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -14,6 +9,11 @@ const livesEl = document.getElementById('lives-display');
 const splashScreen = document.getElementById('splash-screen');
 const splashProgressBar = document.getElementById('splash-progress-bar');
 const splashProgressText = document.getElementById('splash-progress-text');
+
+const loginScreen = document.getElementById('login-screen');
+const loginPilotInput = document.getElementById('login-pilot-input');
+const savePilotBtn = document.getElementById('save-pilot-btn');
+const startPilotName = document.getElementById('start-pilot-name');
 
 const downloadScreen = document.getElementById('download-screen');
 const downloadProgressBar = document.getElementById('download-progress-bar');
@@ -92,17 +92,8 @@ const PLANES_DATA = [
     { id: 9, emoji: '✈️', name: 'Aereo Acrobatico', points: 1800 }
 ];
 
-// --- GESTIONE ID PILOTA UNICO ED INDIPENDENTE ---
-function getOrCreatePilotId() {
-    let id = localStorage.getItem('sky_ace_pilot_id');
-    if (!id) {
-        id = 'PILOTA-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-        localStorage.setItem('sky_ace_pilot_id', id);
-    }
-    return id;
-}
-
-let pilotId = getOrCreatePilotId();
+// --- GESTIONE PILOTA ED IDENTIFICATIVO ---
+let pilotId = localStorage.getItem('sky_ace_pilot_name') || "";
 
 let totalLifetimeScore = parseInt(localStorage.getItem('sky_ace_total_score')) || 0;
 let highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
@@ -113,8 +104,9 @@ let timerDisplayEl = document.getElementById('timer-display');
 let recordDisplayEl = document.getElementById('record-display');
 if (recordDisplayEl) recordDisplayEl.textContent = highScore;
 
-// --- FUNZIONE PER SALVARE IL PROGRESSO SUL CLOUD PERSONALE ---
+// --- SALVATAGGIO CLOUD ---
 async function saveProgressToCloud() {
+    if (!pilotId) return;
     try {
         let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
             headers: { 'X-Master-Key': MASTER_KEY }
@@ -124,7 +116,7 @@ async function saveProgressToCloud() {
         
         if (!record.players) record.players = {};
         
-        record.players[pilotId] = {
+        record.players[pilotId.toUpperCase()] = {
             totalScore: totalLifetimeScore,
             highScore: highScore,
             unlockedPlanes: unlockedPlanes,
@@ -143,8 +135,9 @@ async function saveProgressToCloud() {
     } catch (e) {}
 }
 
-// --- FUNZIONE PER CARICARE IL PROGRESSO DAL CLOUD PERSONALE ---
+// --- CARICAMENTO CLOUD ---
 async function loadProgressFromCloud() {
+    if (!pilotId) return;
     try {
         let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
             headers: { 'X-Master-Key': MASTER_KEY }
@@ -152,8 +145,9 @@ async function loadProgressFromCloud() {
         let data = await response.json();
         let players = data.record.players || {};
 
-        if (players[pilotId]) {
-            let pData = players[pilotId];
+        let key = pilotId.toUpperCase();
+        if (players[key]) {
+            let pData = players[key];
             
             totalLifetimeScore = Math.max(totalLifetimeScore, pData.totalScore || 0);
             highScore = Math.max(highScore, pData.highScore || 0);
@@ -227,7 +221,7 @@ let keys = { ArrowLeft: false, ArrowRight: false };
 window.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft') keys.ArrowLeft = true;
     if (e.key === 'ArrowRight') keys.ArrowRight = true;
-    if (e.key === ' ' && !gameStarted && planeModal.classList.contains('hidden') && pausePopup.classList.contains('hidden') && restartConfirmPopup.classList.contains('hidden') && updatePopup.classList.contains('hidden') && splashScreen.classList.contains('hidden')) {
+    if (e.key === ' ' && !gameStarted && planeModal.classList.contains('hidden') && pausePopup.classList.contains('hidden') && restartConfirmPopup.classList.contains('hidden') && updatePopup.classList.contains('hidden') && splashScreen.classList.contains('hidden') && loginScreen.classList.contains('hidden')) {
         e.preventDefault();
         startGame();
     }
@@ -238,12 +232,11 @@ window.addEventListener('keyup', (e) => {
     if (e.key === 'ArrowRight') keys.ArrowRight = false;
 });
 
-// --- RILEVAMENTO DISPOSITIVO MOBILE VS PC ---
 function isMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
 }
 
-// --- GESTIONE USCITA E TASTO INDIETRO ---
+// --- GESTIONE USCITA E INDIETRO ---
 function pushDummyState() {
     history.pushState({ page: 'game' }, '', window.location.href);
 }
@@ -294,7 +287,6 @@ if (cancelExitBtn) cancelExitBtn.addEventListener('click', closeExitPrompt);
 if (pauseExitBtn) pauseExitBtn.addEventListener('click', promptExitGame);
 if (restartExitBtn) restartExitBtn.addEventListener('click', promptExitGame);
 
-// --- GESTIONE USCITA IN BACKGROUND ---
 document.addEventListener('visibilitychange', () => {
     if (document.hidden && gameRunning && !gamePaused && !isCountdownActive) {
         gamePaused = true;
@@ -302,27 +294,53 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
-// --- CARICAMENTO INIZIALE ROBUSTO ---
+// --- CARICAMENTO INIZIALE ---
 async function runInitialLoading() {
     let progress = 0;
     
-    let cloudPromise = loadProgressFromCloud();
-    let timeoutPromise = new Promise(res => setTimeout(res, 2000));
-    await Promise.race([cloudPromise, timeoutPromise]);
-
     let interval = setInterval(() => {
         progress += Math.floor(Math.random() * 15) + 10;
         if (progress >= 100) {
             progress = 100;
             clearInterval(interval);
-            setTimeout(() => {
+            setTimeout(async () => {
                 if (splashScreen) splashScreen.classList.add('hidden');
-                checkForUpdates();
+                
+                if (!pilotId) {
+                    if (loginScreen) loginScreen.classList.remove('hidden');
+                } else {
+                    if (startPilotName) startPilotName.textContent = pilotId;
+                    await loadProgressFromCloud();
+                    checkForUpdates();
+                }
             }, 200);
         }
         if (splashProgressBar) splashProgressBar.style.width = progress + '%';
         if (splashProgressText) splashProgressText.textContent = progress + '%';
     }, 50);
+}
+
+// --- GESTIONE LOGIN PILOTA ---
+if (savePilotBtn) {
+    savePilotBtn.addEventListener('click', async () => {
+        let name = loginPilotInput ? loginPilotInput.value.trim() : "";
+        if (!name) {
+            alert("Inserisci un Nome Pilota valido!");
+            return;
+        }
+        pilotId = name;
+        localStorage.setItem('sky_ace_pilot_name', pilotId);
+        if (startPilotName) startPilotName.textContent = pilotId;
+        if (playerNameInput) playerNameInput.value = pilotId;
+        
+        savePilotBtn.disabled = true;
+        savePilotBtn.textContent = "Caricamento...";
+        
+        await loadProgressFromCloud();
+        
+        if (loginScreen) loginScreen.classList.add('hidden');
+        checkForUpdates();
+    });
 }
 
 // --- FLUSSO AGGIORNAMENTO E DOWNLOAD ---
@@ -338,11 +356,7 @@ if (updateActionBtn) {
                 progress = 100;
                 clearInterval(interval);
                 setTimeout(() => {
-                    if (onlineVersionToInstall) {
-                        localStorage.setItem('sky_ace_installed_version', onlineVersionToInstall);
-                    } else {
-                        localStorage.setItem('sky_ace_installed_version', CURRENT_GAME_VERSION);
-                    }
+                    localStorage.setItem('sky_ace_installed_version', onlineVersionToInstall || CURRENT_GAME_VERSION);
                     window.location.reload();
                 }, 500);
             }
@@ -352,7 +366,7 @@ if (updateActionBtn) {
     });
 }
 
-// --- GESTIONE PAUSA ---
+// --- PAUSA ---
 if (pauseBtn) {
     pauseBtn.addEventListener('click', () => {
         if (!gameStarted || isCountdownActive) return;
@@ -380,7 +394,7 @@ if (pauseToMenuBtn) {
     });
 }
 
-// --- GESTIONE RICOMINCIA / CONFERMA ---
+// --- RICOMINCIA ---
 if (restartPromptBtn) {
     restartPromptBtn.addEventListener('click', () => {
         if (!gameStarted || isCountdownActive) return;
@@ -541,13 +555,15 @@ if (openPlaneModalBtn) {
 
 if (changePilotIdBtn) {
     changePilotIdBtn.onclick = async () => {
-        let newId = prompt("Inserisci il tuo Codice Cloud personale per sincronizzare questo dispositivo:", pilotId);
-        if (newId && newId.trim() !== "" && newId !== pilotId) {
-            pilotId = newId.trim().toUpperCase();
-            localStorage.setItem('sky_ace_pilot_id', pilotId);
+        let newName = prompt("Inserisci il tuo Nome Pilota per caricare il tuo profilo:", pilotId);
+        if (newName && newName.trim() !== "" && newName.trim() !== pilotId) {
+            pilotId = newName.trim();
+            localStorage.setItem('sky_ace_pilot_name', pilotId);
             if (displayPilotId) displayPilotId.textContent = pilotId;
+            if (startPilotName) startPilotName.textContent = pilotId;
+            if (playerNameInput) playerNameInput.value = pilotId;
             
-            alert("Codice aggiornato! Sincronizzazione in corso...");
+            alert("Profilo aggiornato! Caricamento in corso...");
             await loadProgressFromCloud();
             renderPlaneGrid();
         }
@@ -904,6 +920,7 @@ function triggerGameOver() {
     saveProgressToCloud();
 
     if (finalScoreEl) finalScoreEl.textContent = score;
+    if (playerNameInput && pilotId) playerNameInput.value = pilotId;
     if (saveScoreSection) saveScoreSection.classList.remove('hidden'); 
     if (gameOverScreen) gameOverScreen.classList.remove('hidden');    
     fetchLeaderboard(); 
@@ -934,7 +951,7 @@ async function fetchLeaderboard(highlightName = null, highlightScore = null) {
 
 if (saveBtn) {
     saveBtn.addEventListener('click', async () => {
-        let name = playerNameInput ? playerNameInput.value.trim() : "Pilota Anonimo";
+        let name = playerNameInput ? playerNameInput.value.trim() : (pilotId || "Pilota Anonimo");
         if (!name) name = "Pilota Anonimo";
         saveBtn.disabled = true;
         saveBtn.textContent = "Salvataggio...";
@@ -971,7 +988,6 @@ if (restartBtn) {
     restartBtn.addEventListener('click', () => {
         if (gameOverScreen) gameOverScreen.classList.add('hidden');
         if (saveScoreSection) saveScoreSection.classList.remove('hidden');
-        if (playerNameInput) playerNameInput.value = '';
         if (saveBtn) {
             saveBtn.disabled = false;
             saveBtn.textContent = "Salva in Classifica";
@@ -984,7 +1000,6 @@ if (menuBtn) {
     menuBtn.addEventListener('click', () => {
         if (gameOverScreen) gameOverScreen.classList.add('hidden');
         if (saveScoreSection) saveScoreSection.classList.remove('hidden');
-        if (playerNameInput) playerNameInput.value = '';
         if (saveBtn) {
             saveBtn.disabled = false;
             saveBtn.textContent = "Salva in Classifica";
@@ -996,7 +1011,7 @@ if (menuBtn) {
     });
 }
 
-// --- CONTROLLO AGGIORNAMENTI ---
+// --- CONTROLLO AGGIORNAMENTI ONLINE ---
 async function checkForUpdates() {
     try {
         let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
@@ -1006,7 +1021,9 @@ async function checkForUpdates() {
         let onlineVersion = data.record.latestVersion || CURRENT_GAME_VERSION;
         let changelogItems = data.record.changelog || ["Aggiornamenti generali."];
 
-        if (onlineVersion !== CURRENT_GAME_VERSION) {
+        let installedVer = localStorage.getItem('sky_ace_installed_version') || CURRENT_GAME_VERSION;
+
+        if (onlineVersion !== installedVer) {
             onlineVersionToInstall = onlineVersion;
             if (changelogTitle) changelogTitle.textContent = `Novità della versione ${onlineVersion}:`;
             if (changelogList) {
