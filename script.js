@@ -104,7 +104,7 @@ let timerDisplayEl = document.getElementById('timer-display');
 let recordDisplayEl = document.getElementById('record-display');
 if (recordDisplayEl) recordDisplayEl.textContent = highScore;
 
-// --- SALVATAGGIO CLOUD ---
+// --- SALVATAGGIO CLOUD SICURO ---
 async function saveProgressToCloud() {
     if (!pilotId) return;
     try {
@@ -112,11 +112,10 @@ async function saveProgressToCloud() {
             headers: { 'X-Master-Key': MASTER_KEY }
         });
         let data = await response.json();
-        let record = data.record;
+        let record = data.record || {};
         
         if (!record.players) record.players = {};
         
-        // Salviamo sempre il nome convertito in maiuscolo per evitare discrepanze
         let key = pilotId.trim().toUpperCase();
         record.players[key] = {
             totalScore: totalLifetimeScore,
@@ -137,7 +136,7 @@ async function saveProgressToCloud() {
     } catch (e) {}
 }
 
-// --- CARICAMENTO CLOUD ---
+// --- CARICAMENTO CLOUD SICURO ---
 async function loadProgressFromCloud() {
     if (!pilotId) return;
     try {
@@ -145,13 +144,13 @@ async function loadProgressFromCloud() {
             headers: { 'X-Master-Key': MASTER_KEY }
         });
         let data = await response.json();
-        let players = data.record.players || {};
+        let record = data.record || {};
+        let players = record.players || {};
 
         let key = pilotId.trim().toUpperCase();
         if (players[key]) {
             let pData = players[key];
             
-            // Sincronizza ed eleva i punteggi al valore massimo presente nel cloud o in locale
             totalLifetimeScore = Math.max(totalLifetimeScore, pData.totalScore || 0);
             highScore = Math.max(highScore, pData.highScore || 0);
             
@@ -173,7 +172,6 @@ async function loadProgressFromCloud() {
             if (recordDisplayEl) recordDisplayEl.textContent = highScore;
             if (plane) plane.emoji = PLANES_DATA[selectedPlaneId].emoji;
         } else {
-            // Se il giocatore non esiste ancora sul Cloud per quel nome, lo crea con i dati attuali
             await saveProgressToCloud();
         }
     } catch (e) {}
@@ -1009,10 +1007,11 @@ if (saveBtn) {
                 headers: { 'X-Master-Key': MASTER_KEY }
             });
             let data = await response.json();
-            let scores = data.record.scores || [];
+            let record = data.record || {};
+            let scores = record.scores || [];
             scores.push({ name: name, score: score });
 
-            data.record.scores = scores;
+            record.scores = scores;
 
             await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
                 method: 'PUT',
@@ -1020,7 +1019,7 @@ if (saveBtn) {
                     'Content-Type': 'application/json',
                     'X-Master-Key': MASTER_KEY
                 },
-                body: JSON.stringify(data.record)
+                body: JSON.stringify(record)
             });
 
             if (saveScoreSection) saveScoreSection.classList.add("hidden"); 
