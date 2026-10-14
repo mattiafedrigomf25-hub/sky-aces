@@ -119,7 +119,7 @@
         }
 
         /* Schermate Sovrapposte */
-        #splash-screen, #login-screen, #start-screen, .modal, #pause-popup, #restart-confirm-popup, #exit-confirm-popup, #game-over-screen, #update-popup, #download-screen {
+        #splash-screen, #login-screen, #start-screen, .modal, #pause-popup, #restart-confirm-popup, #game-over-screen, #update-popup, #download-screen, #goodbye-screen {
             position: absolute;
             top: 4px;  
             left: 4px;  
@@ -136,8 +136,8 @@
             z-index: 20;
         }
 
-        /* Schermata Splash e Download */
-        #splash-screen, #download-screen {
+        /* Schermata Splash, Download e Goodbye */
+        #splash-screen, #download-screen, #goodbye-screen {
             z-index: 40;
             background: linear-gradient(180deg, #100530 0%, #2a115c 50%, #4a1c82 100%);
         }
@@ -194,13 +194,13 @@
             font-weight: bold;
         }
 
-        #start-screen h2, #login-screen h2, .modal h2, #pause-popup h2, #restart-confirm-popup h2, #exit-confirm-popup h2, #game-over-screen h2 {
+        #start-screen h2, #login-screen h2, .modal h2, #pause-popup h2, #restart-confirm-popup h2, #game-over-screen h2 {
             color: #ffd54f;
             font-size: 24px;
             margin-bottom: 10px;
         }
 
-        #pause-popup p, #restart-confirm-popup p, #exit-confirm-popup p, #login-screen p {
+        #pause-popup p, #restart-confirm-popup p, #login-screen p {
             font-size: 14px;
             margin-bottom: 20px;
             color: #ddd;
@@ -430,7 +430,7 @@
                 <div id="splash-progress-text" class="progress-text">0%</div>
             </div>
 
-            <!-- 2. SCHERMATA POP-UP AGGIORNAMENTO (Ora prioritaria) -->
+            <!-- 2. SCHERMATA POP-UP AGGIORNAMENTO -->
             <div id="update-popup" class="hidden">
                 <h2>🚀 NUOVA VERSIONE DISPONIBILE!</h2>
                 <p>È stato rilasciato un aggiornamento per <strong>Sky Ace</strong>.</p>
@@ -456,7 +456,7 @@
                 <div id="download-progress-text" class="progress-text">0%</div>
             </div>
 
-            <!-- 4. SCHERMATA LOGIN PILOTA (Appare dopo aggiornamento se prima volta) -->
+            <!-- 4. SCHERMATA LOGIN PILOTA -->
             <div id="login-screen" class="hidden">
                 <h2>IDENTIFICAZIONE PILOTA</h2>
                 <p>Inserisci il tuo nome per sincronizzare i tuoi progressi su qualsiasi dispositivo:</p>
@@ -464,17 +464,26 @@
                 <button id="save-pilot-btn" style="margin-top: 15px; background-color: #69f0ae; color: #1a0b4b;">CONFERMA E ENTRA 🚀</button>
             </div>
 
-            <!-- 5. SCHERMATA DI AVVIO / MENU -->
+            <!-- 5. SCHERMATA DI AVVIO / MENU (Con tasto Esci dal Gioco integrato) -->
             <div id="start-screen" class="hidden">
                 <h2>SKY ACE</h2>
                 <p>Schiva i fulmini, abbatti i caccia nemici e raccogli i bonus!</p>
-                <div class="plane-selection">
-                    <button id="open-plane-modal-btn" style="background-color: #ab47bc;">Hangar Aerei ✈️</button>
+                <div class="plane-selection" style="display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 200px; align-items: center;">
+                    <button id="open-plane-modal-btn" style="background-color: #ab47bc; width: 100%;">Hangar Aerei ✈️</button>
+                    <button id="start-btn" style="background-color: #29b6f6; font-size: 16px; padding: 12px 24px; width: 100%;">AVVIA GIOCO 🚀</button>
+                    <button id="main-exit-btn" style="background-color: #d32f2f; font-size: 14px; padding: 10px 20px; width: 100%; margin-top: 5px;">Esci dal Gioco 🚪</button>
                 </div>
-                <button id="start-btn" style="background-color: #29b6f6; font-size: 16px; padding: 12px 24px; margin-top: 10px;">AVVIA GIOCO 🚀</button>
-                <p class="start-hint">Usa le frecce ⬅️ ➡️ della tastiera o i tasti laterali</p>
+                <p class="start-hint" style="margin-top: 12px;">Usa le frecce ⬅️ ➡️ della tastiera o i tasti laterali</p>
                 <div class="sync-info">☁️ Pilota: <span id="start-pilot-name" style="color:#ffd54f;">---</span></div>
                 <div class="version-info">v<span id="current-version-label">3.1</span></div>
+            </div>
+
+            <!-- 6. SCHERMATA DI ARRIVEDERCI / USCITA DEFINITIVA -->
+            <div id="goodbye-screen" class="hidden">
+                <div class="splash-art">👋🚀</div>
+                <div class="loading-title">SESSIONE TERMINATA</div>
+                <div id="goodbye-message" class="loading-subtitle" style="font-size: 15px; color: #fff; margin-top: 10px;">Grazie per aver volato con Sky Ace!</div>
+                <p style="font-size: 12px; color: #a1887f; margin-top: 15px;">Puoi chiudere questa scheda o minimizzare il browser.</p>
             </div>
 
             <!-- Modale Hangar -->
@@ -493,36 +502,24 @@
                 </div>
             </div>
 
-            <!-- Pop-up Pausa -->
+            <!-- Pop-up Pausa (Senza tasto Esci per evitare tocchi accidentali) -->
             <div id="pause-popup" class="hidden">
                 <h2>GIOCO IN PAUSA</h2>
                 <p>Il volo è in pausa.</p>
                 <div class="popup-buttons">
                     <button id="resume-btn" style="background-color: #4caf50;">Riprendi</button>
                     <button id="pause-to-menu-btn" style="background-color: #512da8;">Torna al Menù</button>
-                    <button id="pause-exit-btn" style="background-color: #d32f2f;">Esci dal Gioco 🚪</button>
                 </div>
             </div>
 
-            <!-- Pop-up Conferma Ricomincia -->
+            <!-- Pop-up Conferma Ricomincia (Senza tasto Esci) -->
             <div id="restart-confirm-popup" class="hidden">
                 <h2>ATTENZIONE</h2>
                 <p>Vuoi davvero ricominciare la partita o tornare al menù?</p>
                 <div class="popup-buttons">
                     <button id="confirm-restart-btn" style="background-color: #e53935;">Ricomincia la partita</button>
                     <button id="restart-to-menu-btn" style="background-color: #512da8;">Torna al menù</button>
-                    <button id="restart-exit-btn" style="background-color: #d32f2f;">Esci dal Gioco 🚪</button>
                     <button id="cancel-restart-btn" style="background-color: #757575;">Annulla</button>
-                </div>
-            </div>
-
-            <!-- Pop-up Conferma Uscita -->
-            <div id="exit-confirm-popup" class="hidden" style="z-index: 50;">
-                <h2>USCIRE DAL GIOCO?</h2>
-                <p>Sei sicuro di voler uscire da Sky Ace?</p>
-                <div class="popup-buttons">
-                    <button id="confirm-exit-btn" style="background-color: #e53935;">SÌ, ESCI</button>
-                    <button id="cancel-exit-btn" style="background-color: #4caf50;">NO, CONTINUA</button>
                 </div>
             </div>
 
