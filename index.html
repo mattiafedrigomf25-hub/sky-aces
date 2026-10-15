@@ -381,16 +381,15 @@
             opacity: 1;
         }
 
-        .side-control-btn {
+       .side-control-btn {
             pointer-events: auto;
             width: 120px;
             height: 60px;
-            background: rgba(41, 182, 246, 0.4);
+            /* background: rgba(41, 182, 246, 0.4); *//* Vecchio background */
+            background: rgba(26, 11, 75, 0.7); /* Background più scuro per contrasto */
             border: 3px solid #ffd54f;
             border-radius: 12px;
-            color: #fff;
-            font-size: 26px;
-            font-weight: bold;
+            color: #fff; /* Questo colorerà l'SVG */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -398,11 +397,18 @@
             user-select: none;
             -webkit-user-select: none;
             touch-action: none;
+            padding: 5px; /* Spazio interno minimo */
+        }
+
+        .svg-arrow {
+            width: 80%; /* La freccia occupa l'80% della larghezza del tasto */
+            height: auto; /* Mantiene le proporzioni */
+            fill: currentColor; /* Prende il colore da 'color' definito sopra (bianco) */
         }
 
         .side-control-btn:active {
             transform: scale(0.92);
-            background: rgba(41, 182, 246, 0.8);
+            background: rgba(41, 182, 246, 0.9); /* Effetto tocco più evidente */
         }
 
         /* Nascondi elementi specifici per la versione mobile */
@@ -561,10 +567,20 @@
                 </div>
             </div>
 
-            <!-- Controlli Mobile Esterni -->
+           <!-- Controlli Mobile -->
             <div id="mobile-controls">
-                <button id="left-btn" class="side-control-btn">⬅️</button>
-                <button id="right-btn" class="side-control-btn">➡️</button>
+                <button id="left-btn" class="side-control-btn" aria-label="Sinistra">
+                    <!-- SVG Freccia Sinistra Minimal -->
+                    <svg viewBox="0 0 24 24" class="svg-arrow">
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                    </svg>
+                </button>
+                <button id="right-btn" class="side-control-btn" aria-label="Destra">
+                    <!-- SVG Freccia Destra Minimal -->
+                    <svg viewBox="0 0 24 24" class="svg-arrow">
+                        <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                    </svg>
+                </button>
             </div>
         </div>
     </div>
