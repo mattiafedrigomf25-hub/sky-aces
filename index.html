@@ -405,6 +405,13 @@
             background: rgba(41, 182, 246, 0.8);
         }
 
+        /* Nascondi elementi specifici per la versione mobile */
+        @media (max-width: 768px), (pointer: coarse) {
+            .desktop-only {
+                display: none !important;
+            }
+        }
+
         @media (max-width: 420px) {
             .canvas-wrapper { width: 92vw; height: calc(92vw * 1.5); max-height: 75vh; }
             .game-container { width: 95vw; }
@@ -485,14 +492,14 @@
                 <button id="save-pilot-btn" style="margin-top: 15px; background-color: #69f0ae; color: #1a0b4b;">CONFERMA E ENTRA 🚀</button>
             </div>
 
-            <!-- 5. SCHERMATA DI AVVIO / MENU (Con tasto Esci dal Gioco integrato) -->
+            <!-- 5. SCHERMATA DI AVVIO / MENU -->
             <div id="start-screen" class="hidden">
                 <h2>SKY ACE</h2>
                 <p>Schiva i fulmini, abbatti i caccia nemici e raccogli i bonus!</p>
                 <div class="plane-selection" style="display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 200px; align-items: center;">
                     <button id="open-plane-modal-btn" style="background-color: #ab47bc; width: 100%;">Hangar Aerei ✈️</button>
                     <button id="start-btn" style="background-color: #29b6f6; font-size: 16px; padding: 12px 24px; width: 100%;">AVVIA GIOCO 🚀</button>
-                    <button id="main-exit-btn" style="background-color: #d32f2f; font-size: 14px; padding: 10px 20px; width: 100%; margin-top: 5px;">Esci dal Gioco 🚪</button>
+                    <button id="main-exit-btn" class="desktop-only" style="background-color: #d32f2f; font-size: 14px; padding: 10px 20px; width: 100%; margin-top: 5px;">Esci dal Gioco 🚪</button>
                 </div>
                 <p class="start-hint" style="margin-top: 12px;">Usa le frecce ⬅️ ➡️ della tastiera o i tasti laterali</p>
                 <div class="sync-info">☁️ Pilota: <span id="start-pilot-name" style="color:#ffd54f;">---</span></div>
@@ -562,7 +569,7 @@
         </div>
     </div>
 
-    <!-- 6. SCHERMATA DI ARRIVEDERCI / USCITA DEFINITIVA (Spostata a schermo intero fuori dal canvas wrapper) -->
+    <!-- 6. SCHERMATA DI ARRIVEDERCI / USCITA DEFINITIVA -->
     <div id="goodbye-screen" class="hidden">
         <div class="splash-art">👋🚀</div>
         <div class="loading-title">SESSIONE TERMINATA</div>
