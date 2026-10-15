@@ -1043,6 +1043,10 @@ if (menuBtn) {
         updateMobileControlsVisibility(false);
         if (startScreen) startScreen.classList.remove('hidden');
     });
+    
+// Nascondi il tasto "Esci dal Gioco" sui dispositivi mobili (dove i browser bloccano la chiusura)
+if (isMobileDevice() && mainExitBtn) {
+    mainExitBtn.style.display = 'none';    
 }
 
 draw();
