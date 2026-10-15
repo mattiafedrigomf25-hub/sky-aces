@@ -1044,10 +1044,12 @@ if (menuBtn) {
         if (startScreen) startScreen.classList.remove('hidden');
     });
     
-// Nascondi il tasto "Esci dal Gioco" sui dispositivi mobili (dove i browser bloccano la chiusura)
-if (isMobileDevice() && mainExitBtn) {
-    mainExitBtn.style.display = 'none';    
-}
+// Nascondi il tasto "Esci dal Gioco" sui dispositivi mobili (se la funzione è definita)
+try {
+    if (typeof isMobileDevice === 'function' && isMobileDevice() && mainExitBtn) {
+        mainExitBtn.style.display = 'none';
+    }
+} catch (e) {}
 
 draw();
 runInitialLoading();
