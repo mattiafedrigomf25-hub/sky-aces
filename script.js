@@ -1,3 +1,7 @@
+// --- ELEMENTI PRINCIPALI E CANVAS ---
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas ? canvas.getContext('2d') : null;
+
 // --- ELEMENTI SCHERMATA DI USCITA / ARRIVEDERCI ---
 const mainExitBtn = document.getElementById('main-exit-btn');
 const goodbyeScreen = document.getElementById('goodbye-screen');
@@ -142,11 +146,12 @@ function addParticles(x, y, color = '#ffd54f', count = 12) {
 }
 
 let plane = {
-    x: canvas.width / 2 - 20,
-    y: canvas.height - 80,
-    width: 40, height: 40,
+    x: canvas ? canvas.width / 2 - 20 : 180,
+    y: canvas ? canvas.height - 80 : 520,
+    width: 40, 
+    height: 40,
     speed: 6,
-    emoji: PLANES_DATA[selectedPlaneId].emoji
+    emoji: '✈️'
 };
 
 let obstacles = [];
