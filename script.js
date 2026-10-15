@@ -1,5 +1,5 @@
 // --- COSTANTI DI CONFIGURAZIONE E VERSIONING ---
-const CURRENT_GAME_VERSION = "3.3";
+const CURRENT_GAME_VERSION = "3.5";
 const BIN_ID = '6ac4b87cffd5d1605351f58d';
 const MASTER_KEY = '$2a$10$aplyk/beh6fEjv43q.yWK.yNbASVpWB2lHxQ8.O3c9aj0.zzW4Kuu';
 
