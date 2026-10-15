@@ -118,8 +118,8 @@
             100% { transform: scale(1); opacity: 1; }
         }
 
-        /* Schermate Sovrapposte */
-        #splash-screen, #login-screen, #start-screen, .modal, #pause-popup, #restart-confirm-popup, #game-over-screen, #update-popup, #download-screen, #goodbye-screen {
+        /* Schermate Sovrapposte interne al canvas-wrapper */
+        #splash-screen, #login-screen, #start-screen, .modal, #pause-popup, #restart-confirm-popup, #game-over-screen, #update-popup, #download-screen {
             position: absolute;
             top: 4px;  
             left: 4px;  
@@ -136,10 +136,31 @@
             z-index: 20;
         }
 
-        /* Schermata Splash, Download e Goodbye */
-        #splash-screen, #download-screen, #goodbye-screen {
+        /* Schermata Splash e Download */
+        #splash-screen, #download-screen {
             z-index: 40;
             background: linear-gradient(180deg, #100530 0%, #2a115c 50%, #4a1c82 100%);
+        }
+
+        /* Schermata di Arrivederci a schermo intero fisso per mobile */
+        #goodbye-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(180deg, #100530 0%, #2a115c 50%, #4a1c82 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            z-index: 99999;
+        }
+
+        #goodbye-screen.hidden {
+            display: none !important;
         }
 
         .splash-art {
@@ -475,15 +496,7 @@
                 </div>
                 <p class="start-hint" style="margin-top: 12px;">Usa le frecce ⬅️ ➡️ della tastiera o i tasti laterali</p>
                 <div class="sync-info">☁️ Pilota: <span id="start-pilot-name" style="color:#ffd54f;">---</span></div>
-                <div class="version-info">v<span id="current-version-label">3.1</span></div>
-            </div>
-
-            <!-- 6. SCHERMATA DI ARRIVEDERCI / USCITA DEFINITIVA -->
-            <div id="goodbye-screen" class="hidden">
-                <div class="splash-art">👋🚀</div>
-                <div class="loading-title">SESSIONE TERMINATA</div>
-                <div id="goodbye-message" class="loading-subtitle" style="font-size: 15px; color: #fff; margin-top: 10px;">Grazie per aver volato con Sky Ace!</div>
-                <p style="font-size: 12px; color: #a1887f; margin-top: 15px;">Puoi chiudere questa scheda o minimizzare il browser.</p>
+                <div class="version-info">v<span id="current-version-label">3.5</span></div>
             </div>
 
             <!-- Modale Hangar -->
@@ -502,7 +515,7 @@
                 </div>
             </div>
 
-            <!-- Pop-up Pausa (Senza tasto Esci per evitare tocchi accidentali) -->
+            <!-- Pop-up Pausa -->
             <div id="pause-popup" class="hidden">
                 <h2>GIOCO IN PAUSA</h2>
                 <p>Il volo è in pausa.</p>
@@ -512,7 +525,7 @@
                 </div>
             </div>
 
-            <!-- Pop-up Conferma Ricomincia (Senza tasto Esci) -->
+            <!-- Pop-up Conferma Ricomincia -->
             <div id="restart-confirm-popup" class="hidden">
                 <h2>ATTENZIONE</h2>
                 <p>Vuoi davvero ricominciare la partita o tornare al menù?</p>
@@ -547,6 +560,14 @@
                 <button id="right-btn" class="side-control-btn">DESTRA ➡️</button>
             </div>
         </div>
+    </div>
+
+    <!-- 6. SCHERMATA DI ARRIVEDERCI / USCITA DEFINITIVA (Spostata a schermo intero fuori dal canvas wrapper) -->
+    <div id="goodbye-screen" class="hidden">
+        <div class="splash-art">👋🚀</div>
+        <div class="loading-title">SESSIONE TERMINATA</div>
+        <div id="goodbye-message" class="loading-subtitle" style="font-size: 15px; color: #fff; margin-top: 10px;">Grazie per aver volato con Sky Ace!</div>
+        <p style="font-size: 12px; color: #a1887f; margin-top: 15px;">Puoi chiudere questa scheda o minimizzare il browser.</p>
     </div>
 
     <script src="script.js"></script>
