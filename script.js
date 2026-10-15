@@ -1043,6 +1043,7 @@ if (menuBtn) {
         updateMobileControlsVisibility(false);
         if (startScreen) startScreen.classList.remove('hidden');
     });
+}
 
 draw();
 runInitialLoading();
