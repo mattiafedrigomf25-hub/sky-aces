@@ -146,7 +146,7 @@ let timerDisplayEl = document.getElementById('timer-display');
 let recordDisplayEl = document.getElementById('record-display');
 if (recordDisplayEl) recordDisplayEl.textContent = highScore;
 
-// --- SALVATAGGIO PROGRESSI LOCALE (ISOLATO SUL DISPOSITIVO) ---
+// --- SALVATAGGIO PROGRESSI LOCALE ED ISOLATO PER PILOTA NEL CLOUD ---
 function saveLocalProgress() {
     localStorage.setItem('sky_ace_total_score', totalLifetimeScore);
     localStorage.setItem('sky_ace_highscore', highScore);
@@ -159,17 +159,68 @@ function saveLocalProgress() {
 
 async function saveProgressToCloud() {
     saveLocalProgress();
+    if (!pilotId) return;
+
+    try {
+        let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+            headers: { 'X-Master-Key': MASTER_KEY }
+        });
+        let data = await response.json();
+        let record = data.record || {};
+
+        if (!record.pilots) record.pilots = {};
+
+        record.pilots[pilotId] = {
+            totalLifetimeScore: totalLifetimeScore,
+            highScore: highScore,
+            unlockedPlanes: unlockedPlanes,
+            selectedPlaneId: selectedPlaneId
+        };
+
+        await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Master-Key': MASTER_KEY
+            },
+            body: JSON.stringify(record)
+        });
+    } catch (error) {}
 }
 
 async function loadProgressFromCloud() {
-    totalLifetimeScore = parseInt(localStorage.getItem('sky_ace_total_score')) || 0;
-    highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
-    unlockedPlanes = JSON.parse(localStorage.getItem('sky_ace_unlocked')) || [0];
-    selectedPlaneId = parseInt(localStorage.getItem('sky_ace_selected_id')) || 0;
+    if (!pilotId) return;
 
-    if (recordDisplayEl) recordDisplayEl.textContent = highScore;
-    if (plane && PLANES_DATA[selectedPlaneId]) {
-        plane.emoji = PLANES_DATA[selectedPlaneId].emoji;
+    try {
+        let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+            headers: { 'X-Master-Key': MASTER_KEY }
+        });
+        let data = await response.json();
+        let record = data.record || {};
+
+        if (record.pilots && record.pilots[pilotId]) {
+            let pData = record.pilots[pilotId];
+            totalLifetimeScore = pData.totalLifetimeScore || 0;
+            highScore = pData.highScore || 0;
+            unlockedPlanes = pData.unlockedPlanes || [0];
+            selectedPlaneId = pData.selectedPlaneId || 0;
+            saveLocalProgress();
+        } else {
+            totalLifetimeScore = parseInt(localStorage.getItem('sky_ace_total_score')) || 0;
+            highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
+            unlockedPlanes = JSON.parse(localStorage.getItem('sky_ace_unlocked')) || [0];
+            selectedPlaneId = parseInt(localStorage.getItem('sky_ace_selected_id')) || 0;
+        }
+
+        if (recordDisplayEl) recordDisplayEl.textContent = highScore;
+        if (plane && PLANES_DATA[selectedPlaneId]) {
+            plane.emoji = PLANES_DATA[selectedPlaneId].emoji;
+        }
+    } catch (error) {
+        totalLifetimeScore = parseInt(localStorage.getItem('sky_ace_total_score')) || 0;
+        highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
+        unlockedPlanes = JSON.parse(localStorage.getItem('sky_ace_unlocked')) || [0];
+        selectedPlaneId = parseInt(localStorage.getItem('sky_ace_selected_id')) || 0;
     }
 }
 
@@ -491,10 +542,10 @@ function renderPlaneGrid() {
                 <div class="plane-emoji">${p.emoji}</div>
                 <div class="plane-info"><strong>${p.name}</strong><br>${isSelected ? 'Selezionato' : 'Sbloccato'}</div>
             `;
-            slot.onclick = () => {
+            slot.onclick = async () => {
                 selectedPlaneId = p.id;
                 plane.emoji = p.emoji;
-                saveLocalProgress();
+                await saveProgressToCloud();
                 renderPlaneGrid();
             };
         } else if (canUnlock) {
@@ -503,9 +554,9 @@ function renderPlaneGrid() {
                 <div class="plane-emoji">${p.emoji}</div>
                 <div class="plane-info" style="color: #ff9800; font-weight: bold;">RISCATTA!</div>
             `;
-            slot.onclick = () => {
+            slot.onclick = async () => {
                 unlockedPlanes.push(p.id);
-                saveLocalProgress();
+                await saveProgressToCloud();
                 renderPlaneGrid();
             };
         } else {
@@ -895,7 +946,7 @@ function updateGame() {
     requestAnimationFrame(updateGame);
 }
 
-function triggerGameOver() {
+async function triggerGameOver() {
     gameRunning = false;
     updateMobileControlsVisibility(false);
     
@@ -905,7 +956,7 @@ function triggerGameOver() {
     totalLifetimeScore += score;
     localStorage.setItem('sky_ace_total_score', totalLifetimeScore);
 
-    saveLocalProgress();
+    await saveProgressToCloud();
 
     if (finalScoreEl) finalScoreEl.textContent = score;
     if (playerNameInput && pilotId) playerNameInput.value = pilotId;
