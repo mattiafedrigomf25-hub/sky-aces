@@ -146,7 +146,7 @@ let timerDisplayEl = document.getElementById('timer-display');
 let recordDisplayEl = document.getElementById('record-display');
 if (recordDisplayEl) recordDisplayEl.textContent = highScore;
 
-// --- SALVATAGGIO E CARICAMENTO PROGRESSI CLOUD PER PILOTA ---
+// --- SALVATAGGIO E CARICAMENTO PROGRESSI CLOUD (OTTIMIZZATO) ---
 function saveLocalProgress() {
     localStorage.setItem('sky_ace_total_score', totalLifetimeScore);
     localStorage.setItem('sky_ace_highscore', highScore);
@@ -154,6 +154,42 @@ function saveLocalProgress() {
     localStorage.setItem('sky_ace_selected_id', selectedPlaneId);
     if (pilotId) {
         localStorage.setItem('sky_ace_pilot_name', pilotId);
+    }
+}
+
+async function loadProgressFromCloud() {
+    if (!pilotId) return;
+
+    const normalizedPilotId = pilotId.trim().toLowerCase();
+
+    try {
+        let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+            headers: { 'X-Master-Key': MASTER_KEY }
+        });
+        let data = await response.json();
+        let record = data.record || {};
+
+        if (record.pilots && record.pilots[normalizedPilotId]) {
+            let pData = record.pilots[normalizedPilotId];
+            
+            totalLifetimeScore = Math.max(totalLifetimeScore, pData.totalLifetimeScore || 0);
+            highScore = Math.max(highScore, pData.highScore || 0);
+            
+            let cloudUnlocked = pData.unlockedPlanes || [0];
+            unlockedPlanes = Array.from(new Set([...unlockedPlanes, ...cloudUnlocked]));
+            
+            if (pData.selectedPlaneId !== undefined) {
+                selectedPlaneId = pData.selectedPlaneId;
+            }
+            saveLocalProgress();
+        }
+    } catch (error) {
+        console.error("Errore caricamento cloud:", error);
+    }
+
+    if (recordDisplayEl) recordDisplayEl.textContent = highScore;
+    if (plane && PLANES_DATA[selectedPlaneId]) {
+        plane.emoji = PLANES_DATA[selectedPlaneId].emoji;
     }
 }
 
@@ -204,43 +240,6 @@ async function saveProgressToCloud() {
         });
     } catch (error) {
         console.error("Errore salvataggio cloud:", error);
-    }
-}
-
-async function loadProgressFromCloud() {
-    if (!pilotId) return;
-
-    const normalizedPilotId = pilotId.trim().toLowerCase();
-
-    try {
-        let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-            headers: { 'X-Master-Key': MASTER_KEY }
-        });
-        let data = await response.json();
-        let record = data.record || {};
-
-        if (record.pilots && record.pilots[normalizedPilotId]) {
-            let pData = record.pilots[normalizedPilotId];
-            totalLifetimeScore = Math.max(totalLifetimeScore, pData.totalLifetimeScore || 0);
-            highScore = Math.max(highScore, pData.highScore || 0);
-            
-            let cloudUnlocked = pData.unlockedPlanes || [0];
-            unlockedPlanes = Array.from(new Set([...unlockedPlanes, ...cloudUnlocked]));
-            
-            if (pData.selectedPlaneId !== undefined) {
-                selectedPlaneId = pData.selectedPlaneId;
-            }
-            saveLocalProgress();
-        } else {
-            await saveProgressToCloud();
-        }
-
-        if (recordDisplayEl) recordDisplayEl.textContent = highScore;
-        if (plane && PLANES_DATA[selectedPlaneId]) {
-            plane.emoji = PLANES_DATA[selectedPlaneId].emoji;
-        }
-    } catch (error) {
-        console.error("Errore caricamento cloud:", error);
     }
 }
 
