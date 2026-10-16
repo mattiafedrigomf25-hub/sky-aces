@@ -3,6 +3,17 @@ const CURRENT_GAME_VERSION = "3.6";
 const BIN_ID = '6ac4b87cffd5d1605351f58d';
 const MASTER_KEY = '$2a$10$aplyk/beh6fEjv43q.yWK.yNbASVpWB2lHxQ8.O3c9aj0.zzW4Kuu';
 
+// --- CONTROLLO VERSIONE SALVATAGGI (FORZATURA RESET PER TUTTI) ---
+const SAVE_DATA_VERSION = "reset_v3.6"; 
+
+if (localStorage.getItem('sky_ace_save_version') !== SAVE_DATA_VERSION) {
+    localStorage.removeItem('sky_ace_total_score');
+    localStorage.removeItem('sky_ace_highscore');
+    localStorage.removeItem('sky_ace_unlocked');
+    localStorage.removeItem('sky_ace_selected_id');
+    localStorage.setItem('sky_ace_save_version', SAVE_DATA_VERSION);
+}
+
 // --- ELEMENTI PRINCIPALI E CANVAS ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas ? canvas.getContext('2d') : null;
@@ -146,13 +157,11 @@ function saveLocalProgress() {
     }
 }
 
-// Funzione di compatibilità (mantenuta vuota/locale per evitare errori di chiamata)
 async function saveProgressToCloud() {
     saveLocalProgress();
 }
 
 async function loadProgressFromCloud() {
-    // I progressi vengono caricati unicamente dal localStorage del dispositivo per isolarli da altri utenti
     totalLifetimeScore = parseInt(localStorage.getItem('sky_ace_total_score')) || 0;
     highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
     unlockedPlanes = JSON.parse(localStorage.getItem('sky_ace_unlocked')) || [0];
