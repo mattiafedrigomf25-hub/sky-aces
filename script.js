@@ -146,7 +146,7 @@ let timerDisplayEl = document.getElementById('timer-display');
 let recordDisplayEl = document.getElementById('record-display');
 if (recordDisplayEl) recordDisplayEl.textContent = highScore;
 
-// --- SALVATAGGIO PROGRESSI LOCALE ED ISOLATO PER PILOTA NEL CLOUD ---
+// --- SALVATAGGIO E CARICAMENTO PROGRESSI CLOUD PER PILOTA ---
 function saveLocalProgress() {
     localStorage.setItem('sky_ace_total_score', totalLifetimeScore);
     localStorage.setItem('sky_ace_highscore', highScore);
@@ -161,6 +161,8 @@ async function saveProgressToCloud() {
     saveLocalProgress();
     if (!pilotId) return;
 
+    const normalizedPilotId = pilotId.trim().toLowerCase();
+
     try {
         let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
             headers: { 'X-Master-Key': MASTER_KEY }
@@ -170,12 +172,27 @@ async function saveProgressToCloud() {
 
         if (!record.pilots) record.pilots = {};
 
-        record.pilots[pilotId] = {
-            totalLifetimeScore: totalLifetimeScore,
-            highScore: highScore,
-            unlockedPlanes: unlockedPlanes,
+        let existingCloudData = record.pilots[normalizedPilotId] || {};
+
+        let cloudTotal = existingCloudData.totalLifetimeScore || 0;
+        let cloudHigh = existingCloudData.highScore || 0;
+        let cloudUnlocked = existingCloudData.unlockedPlanes || [0];
+
+        let mergedTotal = Math.max(totalLifetimeScore, cloudTotal);
+        let mergedHigh = Math.max(highScore, cloudHigh);
+        let mergedUnlocked = Array.from(new Set([...unlockedPlanes, ...cloudUnlocked]));
+
+        record.pilots[normalizedPilotId] = {
+            totalLifetimeScore: mergedTotal,
+            highScore: mergedHigh,
+            unlockedPlanes: mergedUnlocked,
             selectedPlaneId: selectedPlaneId
         };
+
+        totalLifetimeScore = mergedTotal;
+        highScore = mergedHigh;
+        unlockedPlanes = mergedUnlocked;
+        saveLocalProgress();
 
         await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
             method: 'PUT',
@@ -185,11 +202,15 @@ async function saveProgressToCloud() {
             },
             body: JSON.stringify(record)
         });
-    } catch (error) {}
+    } catch (error) {
+        console.error("Errore salvataggio cloud:", error);
+    }
 }
 
 async function loadProgressFromCloud() {
     if (!pilotId) return;
+
+    const normalizedPilotId = pilotId.trim().toLowerCase();
 
     try {
         let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
@@ -198,18 +219,20 @@ async function loadProgressFromCloud() {
         let data = await response.json();
         let record = data.record || {};
 
-        if (record.pilots && record.pilots[pilotId]) {
-            let pData = record.pilots[pilotId];
-            totalLifetimeScore = pData.totalLifetimeScore || 0;
-            highScore = pData.highScore || 0;
-            unlockedPlanes = pData.unlockedPlanes || [0];
-            selectedPlaneId = pData.selectedPlaneId || 0;
+        if (record.pilots && record.pilots[normalizedPilotId]) {
+            let pData = record.pilots[normalizedPilotId];
+            totalLifetimeScore = Math.max(totalLifetimeScore, pData.totalLifetimeScore || 0);
+            highScore = Math.max(highScore, pData.highScore || 0);
+            
+            let cloudUnlocked = pData.unlockedPlanes || [0];
+            unlockedPlanes = Array.from(new Set([...unlockedPlanes, ...cloudUnlocked]));
+            
+            if (pData.selectedPlaneId !== undefined) {
+                selectedPlaneId = pData.selectedPlaneId;
+            }
             saveLocalProgress();
         } else {
-            totalLifetimeScore = parseInt(localStorage.getItem('sky_ace_total_score')) || 0;
-            highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
-            unlockedPlanes = JSON.parse(localStorage.getItem('sky_ace_unlocked')) || [0];
-            selectedPlaneId = parseInt(localStorage.getItem('sky_ace_selected_id')) || 0;
+            await saveProgressToCloud();
         }
 
         if (recordDisplayEl) recordDisplayEl.textContent = highScore;
@@ -217,10 +240,7 @@ async function loadProgressFromCloud() {
             plane.emoji = PLANES_DATA[selectedPlaneId].emoji;
         }
     } catch (error) {
-        totalLifetimeScore = parseInt(localStorage.getItem('sky_ace_total_score')) || 0;
-        highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
-        unlockedPlanes = JSON.parse(localStorage.getItem('sky_ace_unlocked')) || [0];
-        selectedPlaneId = parseInt(localStorage.getItem('sky_ace_selected_id')) || 0;
+        console.error("Errore caricamento cloud:", error);
     }
 }
 
