@@ -1,5 +1,5 @@
 // --- COSTANTI DI CONFIGURAZIONE E VERSIONING ---
-const CURRENT_GAME_VERSION = "3.5";
+const CURRENT_GAME_VERSION = "3.6";
 const BIN_ID = '6ac4b87cffd5d1605351f58d';
 const MASTER_KEY = '$2a$10$aplyk/beh6fEjv43q.yWK.yNbASVpWB2lHxQ8.O3c9aj0.zzW4Kuu';
 
@@ -21,7 +21,6 @@ function triggerGameExit() {
     
     updateMobileControlsVisibility(false);
 
-    // Nascondi tutte le schermate e i modali attivi
     if (startScreen) startScreen.classList.add('hidden');
     if (pausePopup) pausePopup.classList.add('hidden');
     if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
@@ -32,21 +31,17 @@ function triggerGameExit() {
     if (splashScreen) splashScreen.classList.add('hidden');
     if (downloadScreen) downloadScreen.classList.add('hidden');
 
-    // Imposta il messaggio di saluto con il nome del pilota
     if (goodbyeMessage) {
         goodbyeMessage.textContent = `Grazie per aver volato con noi, Comandante ${pilotId || 'Pilota'}! A presto. 👋`;
     }
 
-    // Mostra la schermata finale di arrivederci
     if (goodbyeScreen) goodbyeScreen.classList.remove('hidden');
 
-    // Tenta la chiusura automatica (se supportata da PWA / WebView / finestre pop-up)
     try {
         window.close();
     } catch (e) {}
 }
 
-// Event Listener per il tasto "Esci dal Gioco" nel menu principale
 if (mainExitBtn) {
     mainExitBtn.addEventListener('click', triggerGameExit);
 }
@@ -128,7 +123,7 @@ const PLANES_DATA = [
     { id: 9, emoji: '✈️', name: 'Aereo Acrobatico', points: 1800 }
 ];
 
-// --- GESTIONE PILOTA ED IDENTIFICATIVO ---
+// --- GESTIONE PILOTA ED ISOLAMENTO LOCALE DEI PROGRESSI ---
 let pilotId = localStorage.getItem('sky_ace_pilot_name') || "";
 
 let totalLifetimeScore = parseInt(localStorage.getItem('sky_ace_total_score')) || 0;
@@ -140,77 +135,33 @@ let timerDisplayEl = document.getElementById('timer-display');
 let recordDisplayEl = document.getElementById('record-display');
 if (recordDisplayEl) recordDisplayEl.textContent = highScore;
 
-// --- SALVATAGGIO CLOUD SICURO ---
-async function saveProgressToCloud() {
-    if (!pilotId) return;
-    try {
-        let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-            headers: { 'X-Master-Key': MASTER_KEY }
-        });
-        let data = await response.json();
-        let record = data.record || {};
-        
-        if (!record.players) record.players = {};
-        
-        let key = pilotId.trim().toUpperCase();
-        record.players[key] = {
-            totalScore: totalLifetimeScore,
-            highScore: highScore,
-            unlockedPlanes: unlockedPlanes,
-            selectedPlaneId: selectedPlaneId,
-            lastUpdated: new Date().toISOString()
-        };
-
-        await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Master-Key': MASTER_KEY
-            },
-            body: JSON.stringify(record)
-        });
-    } catch (e) {}
+// --- SALVATAGGIO PROGRESSI LOCALE (ISOLATO SUL DISPOSITIVO) ---
+function saveLocalProgress() {
+    localStorage.setItem('sky_ace_total_score', totalLifetimeScore);
+    localStorage.setItem('sky_ace_highscore', highScore);
+    localStorage.setItem('sky_ace_unlocked', JSON.stringify(unlockedPlanes));
+    localStorage.setItem('sky_ace_selected_id', selectedPlaneId);
+    if (pilotId) {
+        localStorage.setItem('sky_ace_pilot_name', pilotId);
+    }
 }
 
-// --- CARICAMENTO CLOUD SICURO ---
+// Funzione di compatibilità (mantenuta vuota/locale per evitare errori di chiamata)
+async function saveProgressToCloud() {
+    saveLocalProgress();
+}
+
 async function loadProgressFromCloud() {
-    if (!pilotId) return;
-    try {
-        let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-            headers: { 'X-Master-Key': MASTER_KEY }
-        });
-        let data = await response.json();
-        let record = data.record || {};
-        let players = record.players || {};
+    // I progressi vengono caricati unicamente dal localStorage del dispositivo per isolarli da altri utenti
+    totalLifetimeScore = parseInt(localStorage.getItem('sky_ace_total_score')) || 0;
+    highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
+    unlockedPlanes = JSON.parse(localStorage.getItem('sky_ace_unlocked')) || [0];
+    selectedPlaneId = parseInt(localStorage.getItem('sky_ace_selected_id')) || 0;
 
-        let key = pilotId.trim().toUpperCase();
-        if (players[key]) {
-            let pData = players[key];
-            
-            totalLifetimeScore = Math.max(totalLifetimeScore, pData.totalScore || 0);
-            highScore = Math.max(highScore, pData.highScore || 0);
-            
-            if (Array.isArray(pData.unlockedPlanes)) {
-                pData.unlockedPlanes.forEach(id => {
-                    if (!unlockedPlanes.includes(id)) unlockedPlanes.push(id);
-                });
-            }
-            
-            if (pData.selectedPlaneId !== undefined) {
-                selectedPlaneId = pData.selectedPlaneId;
-            }
-
-            localStorage.setItem('sky_ace_total_score', totalLifetimeScore);
-            localStorage.setItem('sky_ace_highscore', highScore);
-            localStorage.setItem('sky_ace_unlocked', JSON.stringify(unlockedPlanes));
-            localStorage.setItem('sky_ace_selected_id', selectedPlaneId);
-
-            if (recordDisplayEl) recordDisplayEl.textContent = highScore;
-            if (plane) plane.emoji = PLANES_DATA[selectedPlaneId].emoji;
-        } else {
-            await saveProgressToCloud();
-        }
-    } catch (e) {}
+    if (recordDisplayEl) recordDisplayEl.textContent = highScore;
+    if (plane && PLANES_DATA[selectedPlaneId]) {
+        plane.emoji = PLANES_DATA[selectedPlaneId].emoji;
+    }
 }
 
 let particles = [];
@@ -387,7 +338,7 @@ if (savePilotBtn) {
         if (playerNameInput) playerNameInput.value = pilotId;
         
         savePilotBtn.disabled = true;
-        savePilotBtn.textContent = "Sincronizzazione Cloud...";
+        savePilotBtn.textContent = "Caricamento Profilo...";
         
         await loadProgressFromCloud();
         
@@ -534,8 +485,7 @@ function renderPlaneGrid() {
             slot.onclick = () => {
                 selectedPlaneId = p.id;
                 plane.emoji = p.emoji;
-                localStorage.setItem('sky_ace_selected_id', selectedPlaneId);
-                saveProgressToCloud(); 
+                saveLocalProgress();
                 renderPlaneGrid();
             };
         } else if (canUnlock) {
@@ -546,8 +496,7 @@ function renderPlaneGrid() {
             `;
             slot.onclick = () => {
                 unlockedPlanes.push(p.id);
-                localStorage.setItem('sky_ace_unlocked', JSON.stringify(unlockedPlanes));
-                saveProgressToCloud(); 
+                saveLocalProgress();
                 renderPlaneGrid();
             };
         } else {
@@ -563,10 +512,7 @@ function renderPlaneGrid() {
 
 if (openPlaneModalBtn) {
     openPlaneModalBtn.onclick = async () => {
-        openPlaneModalBtn.textContent = "Sincronizzazione...";
         await loadProgressFromCloud();
-        openPlaneModalBtn.textContent = "Hangar Aerei ✈️";
-
         if (displayPilotId) displayPilotId.textContent = pilotId;
 
         renderPlaneGrid();
@@ -588,15 +534,15 @@ if (openPlaneModalBtn) {
 
 if (changePilotIdBtn) {
     changePilotIdBtn.onclick = async () => {
-        let newName = prompt("Inserisci il tuo Nome Pilota per caricare il tuo profilo:", pilotId);
-        if (newName && newName.trim() !== "" && newName.trim().toUpperCase() !== pilotId.toUpperCase()) {
+        let newName = prompt("Inserisci il tuo Nome Pilota:", pilotId);
+        if (newName && newName.trim() !== "") {
             pilotId = newName.trim();
             localStorage.setItem('sky_ace_pilot_name', pilotId);
             if (displayPilotId) displayPilotId.textContent = pilotId;
             if (startPilotName) startPilotName.textContent = pilotId;
             if (playerNameInput) playerNameInput.value = pilotId;
             
-            alert("Profilo aggiornato! Caricamento in corso...");
+            alert("Nome pilota aggiornato!");
             await loadProgressFromCloud();
             renderPlaneGrid();
         }
@@ -950,7 +896,7 @@ function triggerGameOver() {
     totalLifetimeScore += score;
     localStorage.setItem('sky_ace_total_score', totalLifetimeScore);
 
-    saveProgressToCloud();
+    saveLocalProgress();
 
     if (finalScoreEl) finalScoreEl.textContent = score;
     if (playerNameInput && pilotId) playerNameInput.value = pilotId;
