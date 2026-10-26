@@ -4,7 +4,7 @@ const BIN_ID = '6ac4b87cffd5d1605351f58d';
 const MASTER_KEY = '$2a$10$aplyk/beh6fEjv43q.yWK.yNbASVpWB2lHxQ8.O3c9aj0.zzW4Kuu';
 
 // --- CONTROLLO VERSIONE SALVATAGGI (FORZATURA RESET PER TUTTI) ---
-const SAVE_DATA_VERSION = "reset_v3.6"; 
+const SAVE_DATA_VERSION = "reset_v4.0"; 
 
 if (localStorage.getItem('sky_ace_save_version') !== SAVE_DATA_VERSION) {
     localStorage.removeItem('sky_ace_total_score');
@@ -146,7 +146,24 @@ let timerDisplayEl = document.getElementById('timer-display');
 let recordDisplayEl = document.getElementById('record-display');
 if (recordDisplayEl) recordDisplayEl.textContent = highScore;
 
-// --- SALVATAGGIO E CARICAMENTO PROGRESSI CLOUD (OTTIMIZZATO) ---
+// --- STATO CAMPAGNA A MONDI E SOTTOLIVELLI ---
+let currentWorld = 1;      
+let currentSubLevel = 1;   
+let bossActive = false;
+let boss = {
+    x: canvas ? canvas.width / 2 - 40 : 160,
+    y: 40,
+    width: 70,
+    height: 60,
+    health: 50,
+    maxHealth: 50,
+    speed: 2.5,
+    direction: 1,
+    shootTimer: 0,
+    emoji: '🛸'
+};
+
+// --- SALVATAGGIO E CARICAMENTO PROGRESSI CLOUD ---
 function saveLocalProgress() {
     localStorage.setItem('sky_ace_total_score', totalLifetimeScore);
     localStorage.setItem('sky_ace_highscore', highScore);
@@ -159,7 +176,6 @@ function saveLocalProgress() {
 
 async function loadProgressFromCloud() {
     if (!pilotId) return;
-
     const normalizedPilotId = pilotId.trim().toLowerCase();
 
     try {
@@ -171,21 +187,16 @@ async function loadProgressFromCloud() {
 
         if (record.pilots && record.pilots[normalizedPilotId]) {
             let pData = record.pilots[normalizedPilotId];
-            
             totalLifetimeScore = Math.max(totalLifetimeScore, pData.totalLifetimeScore || 0);
             highScore = Math.max(highScore, pData.highScore || 0);
-            
             let cloudUnlocked = pData.unlockedPlanes || [0];
             unlockedPlanes = Array.from(new Set([...unlockedPlanes, ...cloudUnlocked]));
-            
             if (pData.selectedPlaneId !== undefined) {
                 selectedPlaneId = pData.selectedPlaneId;
             }
             saveLocalProgress();
         }
-    } catch (error) {
-        console.error("Errore caricamento cloud:", error);
-    }
+    } catch (error) {}
 
     if (recordDisplayEl) recordDisplayEl.textContent = highScore;
     if (plane && PLANES_DATA[selectedPlaneId]) {
@@ -196,7 +207,6 @@ async function loadProgressFromCloud() {
 async function saveProgressToCloud() {
     saveLocalProgress();
     if (!pilotId) return;
-
     const normalizedPilotId = pilotId.trim().toLowerCase();
 
     try {
@@ -207,7 +217,6 @@ async function saveProgressToCloud() {
         let record = data.record || {};
 
         if (!record.pilots) record.pilots = {};
-
         let existingCloudData = record.pilots[normalizedPilotId] || {};
 
         let cloudTotal = existingCloudData.totalLifetimeScore || 0;
@@ -238,9 +247,7 @@ async function saveProgressToCloud() {
             },
             body: JSON.stringify(record)
         });
-    } catch (error) {
-        console.error("Errore salvataggio cloud:", error);
-    }
+    } catch (error) {}
 }
 
 let particles = [];
@@ -270,6 +277,8 @@ let plane = {
 
 let obstacles = [];
 let enemyLasers = [];
+let playerLasers = [];
+let shootCooldown = 0;
 let obstacleTimer = 0;
 let spawnRate = 40; 
 let gameSpeed = 3;
@@ -279,13 +288,14 @@ let gameStarted = false;
 let gameRunning = false; 
 let gamePaused = false;
 let isCountdownActive = false;
-let survivalTime = 0;
+let subLevelTimer = 0;
 
 let shieldActive = false;
 let shieldTimer = 0;
 let doublePointsActive = false;
 let doublePointsTimer = 0;
-let windForce = 0;
+let tripleShotActive = false;
+let tripleShotTimer = 0; 
 
 let keys = { ArrowLeft: false, ArrowRight: false };
 
@@ -307,7 +317,6 @@ function isMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
 }
 
-// --- GESTIONE PAUSA CON VISIBILITY CHANGE ---
 document.addEventListener('visibilitychange', () => {
     if (document.hidden && gameRunning && !gamePaused && !isCountdownActive) {
         gamePaused = true;
@@ -315,10 +324,8 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
-// --- SEQUENZA DI AVVIO ---
 async function runInitialLoading() {
     let progress = 0;
-    
     let interval = setInterval(() => {
         progress += Math.floor(Math.random() * 15) + 10;
         if (progress >= 100) {
@@ -326,7 +333,6 @@ async function runInitialLoading() {
             clearInterval(interval);
             setTimeout(async () => {
                 if (splashScreen) splashScreen.classList.add('hidden');
-                
                 let hasUpdate = await checkForUpdates();
                 if (!hasUpdate) {
                     proceedToGameOrLogin();
@@ -348,7 +354,6 @@ async function proceedToGameOrLogin() {
     }
 }
 
-// --- CONTROLLO AGGIORNAMENTI ONLINE ---
 async function checkForUpdates() {
     try {
         let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
@@ -357,7 +362,6 @@ async function checkForUpdates() {
         let data = await response.json();
         let onlineVersion = data.record.latestVersion || CURRENT_GAME_VERSION;
         let changelogItems = data.record.changelog || ["Aggiornamenti generali."];
-
         let installedVer = localStorage.getItem('sky_ace_installed_version') || CURRENT_GAME_VERSION;
 
         if (onlineVersion !== installedVer) {
@@ -403,7 +407,6 @@ if (updateActionBtn) {
     });
 }
 
-// --- GESTIONE LOGIN PILOTA CON CARICAMENTO IMMEDIATO ---
 if (savePilotBtn) {
     savePilotBtn.addEventListener('click', async () => {
         let name = loginPilotInput ? loginPilotInput.value.trim() : "";
@@ -418,9 +421,7 @@ if (savePilotBtn) {
         
         savePilotBtn.disabled = true;
         savePilotBtn.textContent = "Caricamento Profilo...";
-        
         await loadProgressFromCloud();
-        
         savePilotBtn.disabled = false;
         savePilotBtn.textContent = "CONFERMA E ENTRA 🚀";
         
@@ -429,7 +430,6 @@ if (savePilotBtn) {
     });
 }
 
-// --- PAUSA ---
 if (pauseBtn) {
     pauseBtn.addEventListener('click', () => {
         if (!gameStarted || isCountdownActive) return;
@@ -457,7 +457,6 @@ if (pauseToMenuBtn) {
     });
 }
 
-// --- RICOMINCIA ---
 if (restartPromptBtn) {
     restartPromptBtn.addEventListener('click', () => {
         if (!gameStarted || isCountdownActive) return;
@@ -495,7 +494,6 @@ if (restartToMenuBtn) {
     });
 }
 
-// --- CONTROLLI MOBILE ---
 const mobileControls = document.getElementById('mobile-controls');
 const leftBtn = document.getElementById('left-btn');
 const rightBtn = document.getElementById('right-btn');
@@ -506,7 +504,6 @@ function updateMobileControlsVisibility(show) {
         mobileControls.classList.remove('in-game-active');
         return;
     }
-    
     if (show) {
         mobileControls.classList.add('in-game-active');
     } else {
@@ -516,25 +513,20 @@ function updateMobileControlsVisibility(show) {
 
 function setupInstantButton(btn, keyProp) {
     if (!btn) return;
-
     const startAction = (e) => {
         if (e && e.cancelable) e.preventDefault();
         keys[keyProp] = true;
     };
-
     const stopAction = (e) => {
         if (e && e.cancelable) e.preventDefault();
         keys[keyProp] = false;
     };
-
     btn.addEventListener('touchstart', startAction, { passive: false });
     btn.addEventListener('touchend', stopAction, { passive: false });
     btn.addEventListener('touchcancel', stopAction, { passive: false });
-
     btn.addEventListener('pointerdown', (e) => {
         if (e.pointerType !== 'touch') startAction(e);
     }, { passive: false });
-
     btn.addEventListener('pointerup', (e) => {
         if (e.pointerType !== 'touch') stopAction(e);
     }, { passive: false });
@@ -543,7 +535,6 @@ function setupInstantButton(btn, keyProp) {
 setupInstantButton(leftBtn, 'ArrowLeft');
 setupInstantButton(rightBtn, 'ArrowRight');
 
-// --- HANGAR AEREI ---
 function renderPlaneGrid() {
     if (!planeGrid) return;
     planeGrid.innerHTML = '';
@@ -634,7 +625,6 @@ if (closePlaneModalBtn) {
     };
 }
 
-// --- COUNTDOWN ---
 function runCountdown(onComplete) {
     isCountdownActive = true;
     let count = 3;
@@ -690,24 +680,33 @@ function startGame() {
     plane.x = canvas.width / 2 - plane.width / 2;
     obstacles = [];
     enemyLasers = [];
+    playerLasers = [];
     particles = [];
     
     highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
     score = 0; 
     lives = 3;
     gameSpeed = 3;
-    survivalTime = 0;
+    subLevelTimer = 0;
     obstacleTimer = 0;
     shieldActive = false;
     doublePointsActive = false;
+    tripleShotActive = false;
+
+    currentWorld = 1;
+    currentSubLevel = 1;
+    bossActive = false;
+    boss.health = 50;
+    boss.maxHealth = 50;
+    boss.x = canvas.width / 2 - boss.width / 2;
+    boss.y = 40;
 
     if (currentScoreEl) currentScoreEl.textContent = score;
-    if (timerDisplayEl) timerDisplayEl.textContent = '0s';
+    if (timerDisplayEl) timerDisplayEl.textContent = 'Mondo 1-1';
     if (recordDisplayEl) recordDisplayEl.textContent = highScore;
     updateLivesDisplay();
 
     runCountdown(() => {});
-
     updateGame();
 }
 
@@ -720,25 +719,32 @@ function updateLivesDisplay() {
 }
 
 function spawnObstacle() {
+    if (bossActive) return;
+
     let rand = Math.random();
     let type, symbol, points, width, height;
+    let difficultyBonus = (currentWorld - 1) * 0.05;
 
-    if (rand < 0.45) {
-        type = 'lightning'; symbol = '⚡'; points = 1; width = 40; height = 30;
-    } else if (rand < 0.65) {
-        type = 'laserEnemy'; symbol = '🛩️'; points = -5; width = 40; height = 40;
-    } else if (rand < 0.80) {
-        type = 'bonus'; symbol = '🌟'; points = 3; width = 40; height = 40;
-    } else if (rand < 0.92) {
-        type = 'shield'; symbol = '🛡️'; points = 5; width = 40; height = 40;
-    } else {
-        type = 'double'; symbol = '💎'; points = 10; width = 40; height = 40;
+    if (currentSubLevel === 1) {
+        if (rand < (0.45 - difficultyBonus)) { type = 'lightning'; symbol = '⚡'; points = 1; width = 40; height = 30; }
+        else if (rand < (0.68 - difficultyBonus)) { type = 'laserEnemy'; symbol = '🛩️'; points = -5; width = 40; height = 40; }
+        else if (rand < 0.80) { type = 'bonus'; symbol = '🌟'; points = 3; width = 40; height = 40; }
+        else if (rand < 0.90) { type = 'shield'; symbol = '🛡️'; points = 5; width = 40; height = 40; }
+        else if (rand < 0.96) { type = 'tripleShot'; symbol = '🎯'; points = 8; width = 40; height = 40; }
+        else { type = 'double'; symbol = '💎'; points = 10; width = 40; height = 40; }
+    } else if (currentSubLevel === 2) {
+        if (rand < (0.30 - difficultyBonus)) { type = 'lightning'; symbol = '⚡'; points = 1; width = 40; height = 30; }
+        else if (rand < (0.65 - difficultyBonus)) { type = 'laserEnemy'; symbol = '🛩️'; points = -5; width = 40; height = 40; }
+        else if (rand < 0.75) { type = 'bonus'; symbol = '🌟'; points = 3; width = 40; height = 40; }
+        else if (rand < 0.85) { type = 'shield'; symbol = '🛡️'; points = 5; width = 40; height = 40; }
+        else if (rand < 0.93) { type = 'tripleShot'; symbol = '🎯'; points = 8; width = 40; height = 40; }
+        else { type = 'double'; symbol = '💎'; points = 10; width = 40; height = 40; }
     }
     
     let x = Math.random() * (canvas.width - width);
     obstacles.push({
         x: x, y: -50, width: width, height: height,
-        speed: gameSpeed + (type === 'laserEnemy' ? 0.3 : Math.random() * 1.5),
+        speed: gameSpeed + (type === 'laserEnemy' ? 0.6 : Math.random() * 1.5),
         points: points, type: type, symbol: symbol, shootTimer: 0 
     });
 }
@@ -768,7 +774,7 @@ function draw() {
 
     ctx.save();
     ctx.translate(plane.x + plane.width / 2, plane.y + plane.height / 2);
-    ctx.rotate(-Math.PI / 4); 
+    ctx.rotate(0); 
     ctx.font = '36px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -778,7 +784,7 @@ function draw() {
     for (let obs of obstacles) {
         ctx.save();
         ctx.translate(obs.x + obs.width / 2, obs.y + obs.height / 2);
-        if (obs.type === 'laserEnemy') ctx.rotate(Math.PI / 2); 
+        if (obs.type === 'laserEnemy') ctx.rotate(3 * Math.PI / 4); 
         ctx.font = '30px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -786,52 +792,111 @@ function draw() {
         ctx.restore();
     }
 
+    if (bossActive) {
+        ctx.save();
+        ctx.translate(boss.x + boss.width / 2, boss.y + boss.height / 2);
+        ctx.font = '52px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(boss.emoji, 0, 0);
+        ctx.restore();
+
+        let barWidth = canvas.width - 60;
+        let barHeight = 8;
+        let barX = 30;
+        let barY = 12;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(barX, barY, barWidth, barHeight);
+        let healthPercent = Math.max(0, boss.health / boss.maxHealth);
+        ctx.fillStyle = '#ff1744';
+        ctx.fillRect(barX, barY, barWidth * healthPercent, barHeight);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(barX, barY, barWidth, barHeight);
+
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`MONDO ${currentWorld} - BOSS FINALE (${Math.ceil(boss.health)}/${boss.maxHealth})`, canvas.width / 2, barY + 19);
+    }
+
     for (let laser of enemyLasers) {
         ctx.fillStyle = '#ff1744';
         ctx.fillRect(laser.x, laser.y, laser.width, laser.height);
     }
 
+    for (let laser of playerLasers) {
+        ctx.fillStyle = '#69f0ae';
+        ctx.fillRect(laser.x, laser.y, laser.width, laser.height);
+    }
+
+    ctx.save();
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+    ctx.shadowBlur = 4;
+    ctx.fillStyle = currentSubLevel === 3 ? '#ff1744' : '#69f0ae';
+    let levelText = currentSubLevel === 3 ? `MONDO ${currentWorld}-3: BOSS FINALE` : `MONDO ${currentWorld}-${currentSubLevel}`;
+    ctx.fillText(levelText, 15, bossActive ? 42 : 25);
+    ctx.restore();
+
+    let hudYOffset = bossActive ? 60 : 45;
     if (doublePointsActive) {
         ctx.fillStyle = '#69f0ae';
         ctx.font = 'bold 14px sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText('PUNTI x2!', 15, 25);
+        ctx.fillText('PUNTI x2!', 15, hudYOffset);
+        hudYOffset += 18;
+    }
+
+    if (tripleShotActive) {
+        ctx.fillStyle = '#ffd54f';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`RAFFICA x3: ${Math.ceil(tripleShotTimer / 60)}s`, 15, hudYOffset);
     }
 
     if (shieldActive) {
         ctx.fillStyle = '#29b6f6';
         ctx.font = 'bold 14px sans-serif';
         ctx.textAlign = 'right';
-        ctx.fillText(`SCUDO: ${Math.ceil(shieldTimer / 60)}s`, canvas.width - 15, 25);
+        ctx.fillText(`SCUDO: ${Math.ceil(shieldTimer / 60)}s`, canvas.width - 15, bossActive ? 42 : 25);
     }
 }
 
 function updateGame() {
-    if (!gameRunning || gamePaused) return;
-
-    if (keys.ArrowLeft) plane.x -= plane.speed;
-    if (keys.ArrowRight) plane.x += plane.speed;
-
-    if (plane.x < 0) plane.x = 0;
-    if (plane.x + plane.width > canvas.width) plane.x = canvas.width - plane.width;
-
-    if (isCountdownActive) {
-        draw();
+    if (!gameRunning) return;
+    if (gamePaused || isCountdownActive) {
         requestAnimationFrame(updateGame);
         return;
     }
 
-    survivalTime++;
-    if (survivalTime % 60 === 0 && timerDisplayEl) {
-        timerDisplayEl.textContent = Math.floor(survivalTime / 60) + 's';
-    }
-
-    gameSpeed = 3 + Math.floor(survivalTime / 1000) * 0.1; 
-    spawnRate = Math.max(25, 40 - Math.floor(survivalTime / 400) * 2); 
+    subLevelTimer++;
     
-    if (survivalTime % 400 === 0) windForce = (Math.random() - 0.5) * 1.5;
-    if (survivalTime % 600 === 0) windForce = 0;
-
+    if (!bossActive) {
+        if (subLevelTimer < 900 && currentSubLevel === 1) {
+            gameSpeed = 3 + (currentWorld - 1) * 0.5 + Math.floor(subLevelTimer / 300) * 0.2;
+            spawnRate = Math.max(25, 40 - (currentWorld * 3));
+        } else if (currentSubLevel === 1 && subLevelTimer >= 900) {
+            currentSubLevel = 2;
+            subLevelTimer = 0;
+            if (timerDisplayEl) timerDisplayEl.textContent = `Mondo ${currentWorld}-2`;
+        } else if (subLevelTimer < 1100 && currentSubLevel === 2) {
+            gameSpeed = 3.8 + (currentWorld - 1) * 0.5;
+            spawnRate = Math.max(20, 32 - (currentWorld * 3));
+        } else if (currentSubLevel === 2 && subLevelTimer >= 1100) {
+            currentSubLevel = 3;
+            bossActive = true;
+            boss.maxHealth = 50 + (currentWorld - 1) * 25;
+            boss.health = boss.maxHealth;
+            boss.speed = 2.5 + (currentWorld - 1) * 0.4;
+            boss.x = canvas.width / 2 - boss.width / 2;
+            boss.y = 40;
+            obstacles = [];
+            if (timerDisplayEl) timerDisplayEl.textContent = `Mondo ${currentWorld}-3 (Boss)`;
+        }
+    }
+    
     if (shieldActive) {
         shieldTimer--;
         if (shieldTimer <= 0) shieldActive = false;
@@ -840,22 +905,104 @@ function updateGame() {
         doublePointsTimer--;
         if (doublePointsTimer <= 0) doublePointsActive = false;
     }
+    if (tripleShotActive) {
+        tripleShotTimer--;
+        if (tripleShotTimer <= 0) tripleShotActive = false;
+    }
 
-    plane.x += windForce;
+    if (keys.ArrowLeft) plane.x -= plane.speed;
+    if (keys.ArrowRight) plane.x += plane.speed;
+
+    if (plane.x < 0) plane.x = 0;
+    if (plane.x + plane.width > canvas.width) plane.x = canvas.width - plane.width;
+
+    shootCooldown++;
+    if (shootCooldown > 22) {
+        if (tripleShotActive) {
+            playerLasers.push({ x: plane.x + 2, y: plane.y, width: 5, height: 14, speed: 8 });
+            playerLasers.push({ x: plane.x + plane.width / 2 - 2, y: plane.y - 4, width: 5, height: 14, speed: 8 });
+            playerLasers.push({ x: plane.x + plane.width - 7, y: plane.y, width: 5, height: 14, speed: 8 });
+        } else {
+            playerLasers.push({
+                x: plane.x + plane.width / 2 - 3,
+                y: plane.y,
+                width: 6,
+                height: 14,
+                speed: 8
+            });
+        }
+        shootCooldown = 0;
+    }
+
+    for (let i = playerLasers.length - 1; i >= 0; i--) {
+        playerLasers[i].y -= playerLasers[i].speed;
+        if (playerLasers[i].y < 0) {
+            playerLasers.splice(i, 1);
+        }
+    }
 
     for (let i = particles.length - 1; i >= 0; i--) {
         let p = particles[i];
-        p.x += p.vx; p.y += p.vy; p.alpha -= p.decay;
-        if (p.alpha <= 0) particles.splice(i, 1);
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= p.decay;
+        if (p.alpha <= 0) {
+            particles.splice(i, 1);
+        }
     }
 
-    obstacleTimer++;
-    if (obstacleTimer > spawnRate) {
-        spawnObstacle();
-        obstacleTimer = 0;
+    if (!bossActive) {
+        obstacleTimer++;
+        if (obstacleTimer > spawnRate) {
+            spawnObstacle();
+            obstacleTimer = 0;
+        }
+    } else {
+        boss.x += boss.speed * boss.direction;
+        if (boss.x <= 15 || boss.x + boss.width >= canvas.width - 15) {
+            boss.direction *= -1;
+        }
+
+        boss.shootTimer++;
+        if (boss.shootTimer > Math.max(30, 50 - currentWorld * 5)) {
+            enemyLasers.push({ x: boss.x + 10, y: boss.y + boss.height, width: 6, height: 16, speed: 5 });
+            enemyLasers.push({ x: boss.x + boss.width / 2 - 3, y: boss.y + boss.height, width: 6, height: 16, speed: 6 });
+            enemyLasers.push({ x: boss.x + boss.width - 16, y: boss.y + boss.height, width: 6, height: 16, speed: 5 });
+            boss.shootTimer = 0;
+        }
+
+        for (let j = playerLasers.length - 1; j >= 0; j--) {
+            let pLaser = playerLasers[j];
+            if (
+                pLaser.x < boss.x + boss.width &&
+                pLaser.x + pLaser.width > boss.x &&
+                pLaser.y < boss.y + boss.height &&
+                pLaser.y + pLaser.height > boss.y
+            ) {
+                addParticles(pLaser.x, pLaser.y, '#ffd54f', 6);
+                boss.health -= 1;
+                playerLasers.splice(j, 1);
+
+                if (boss.health <= 0) {
+                    addParticles(boss.x + boss.width / 2, boss.y + boss.height / 2, '#69f0ae', 40);
+                    bossActive = false;
+                    score += 300 * currentWorld; 
+                    if (score > highScore) {
+                        highScore = score;
+                        if (recordDisplayEl) recordDisplayEl.textContent = highScore;
+                    }
+                    if (currentScoreEl) currentScoreEl.textContent = score;
+
+                    currentWorld++;
+                    currentSubLevel = 1;
+                    subLevelTimer = 0;
+                    if (timerDisplayEl) timerDisplayEl.textContent = `Mondo ${currentWorld}-1`;
+                }
+                break;
+            }
+        }
     }
 
-    // Laser Nemici
     for (let i = enemyLasers.length - 1; i >= 0; i--) {
         enemyLasers[i].y += enemyLasers[i].speed;
         let padding = 8;
@@ -865,10 +1012,16 @@ function updateGame() {
             plane.y + padding < enemyLasers[i].y + enemyLasers[i].height - padding &&
             plane.y + plane.height - padding > enemyLasers[i].y + enemyLasers[i].height
         ) {
-            addParticles(enemyLasers[i].x, enemyLasers[i].y, '#ff1744', 10);
-            if (!shieldActive) {
-                score = Math.max(0, score - 5);
-                if (currentScoreEl) currentScoreEl.textContent = score;
+            addParticles(plane.x + plane.width / 2, plane.y + plane.height / 2, '#ff1744', 12);
+            if (shieldActive) {
+                shieldActive = false;
+            } else {
+                lives--;
+                updateLivesDisplay();
+                if (lives <= 0) {
+                    triggerGameOver();
+                    return;
+                }
             }
             enemyLasers.splice(i, 1);
             continue;
@@ -876,10 +1029,42 @@ function updateGame() {
         if (enemyLasers[i].y > canvas.height) enemyLasers.splice(i, 1);
     }
 
-    // Ostacoli Generali
     for (let i = obstacles.length - 1; i >= 0; i--) {
         let obs = obstacles[i];
         obs.y += obs.speed;
+
+        for (let j = playerLasers.length - 1; j >= 0; j--) {
+            let pLaser = playerLasers[j];
+            if (
+                obs.type === 'laserEnemy' &&
+                pLaser.x < obs.x + obs.width &&
+                pLaser.x + pLaser.width > obs.x &&
+                pLaser.y < obs.y + obs.height &&
+                pLaser.y + pLaser.height > obs.y
+            ) {
+                addParticles(obs.x + obs.width / 2, obs.y + obs.height / 2, '#69f0ae', 10);
+                score += 10;
+                if (score > highScore) {
+                    highScore = score;
+                    if (recordDisplayEl) recordDisplayEl.textContent = highScore;
+                }
+                if (currentScoreEl) currentScoreEl.textContent = score;
+
+                if (Math.random() < 0.4) {
+                    obs.type = 'tripleShot';
+                    obs.symbol = '🎯';
+                    obs.y += 10;
+                    playerLasers.splice(j, 1);
+                    break;
+                }
+
+                obstacles.splice(i, 1);
+                playerLasers.splice(j, 1);
+                break;
+            }
+        }
+
+        if (!obstacles[i]) continue;
 
         if (obs.type === 'laserEnemy') {
             if (obs.x < plane.x) obs.x += 1.0; 
@@ -890,7 +1075,9 @@ function updateGame() {
                 enemyLasers.push({
                     x: obs.x + obs.width / 2 - 3,
                     y: obs.y + obs.height,
-                    width: 6, height: 16, speed: 6
+                    width: 6,
+                    height: 16,
+                    speed: 6
                 });
                 obs.shootTimer = 0;
             }
@@ -904,9 +1091,11 @@ function updateGame() {
             plane.y + plane.height - padding > obs.y + padding
         ) {
             addParticles(obs.x + obs.width / 2, obs.y + obs.height / 2, obs.type === 'bonus' ? '#69f0ae' : '#ff9800', 12);
-            
             if (obs.type === 'lightning') {
-                if (!shieldActive) {
+                if (shieldActive) {
+                    shieldActive = false;
+                    obstacles.splice(i, 1);
+                } else {
                     lives--;
                     updateLivesDisplay();
                     obstacles.splice(i, 1);
@@ -914,15 +1103,20 @@ function updateGame() {
                         triggerGameOver();
                         return;
                     }
-                } else {
-                    obstacles.splice(i, 1);
                 }
             } else if (obs.type === 'laserEnemy') {
-                if (!shieldActive) {
+                if (shieldActive) {
+                    shieldActive = false;
+                    obstacles.splice(i, 1);
+                } else {
                     score = Math.max(0, score - 5);
+                    if (score > highScore) {
+                        highScore = score;
+                        if (recordDisplayEl) recordDisplayEl.textContent = highScore;
+                    }
                     if (currentScoreEl) currentScoreEl.textContent = score;
+                    obstacles.splice(i, 1);
                 }
-                obstacles.splice(i, 1);
             } else {
                 let gainedPoints = 0;
                 if (obs.type === 'bonus') {
@@ -930,6 +1124,9 @@ function updateGame() {
                 } else if (obs.type === 'shield') {
                     shieldActive = true;
                     shieldTimer = 300;
+                } else if (obs.type === 'tripleShot') {
+                    tripleShotActive = true;
+                    tripleShotTimer = 850; 
                 } else if (obs.type === 'double') {
                     doublePointsActive = true;
                     doublePointsTimer = 480;
@@ -940,7 +1137,6 @@ function updateGame() {
                     highScore = score;
                     if (recordDisplayEl) recordDisplayEl.textContent = highScore;
                 }
-
                 if (currentScoreEl) currentScoreEl.textContent = score;
                 obstacles.splice(i, 1);
             }
@@ -1022,7 +1218,6 @@ if (saveBtn) {
             let record = data.record || {};
             let scores = record.scores || [];
             scores.push({ name: name, score: score });
-
             record.scores = scores;
 
             await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
