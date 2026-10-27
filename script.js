@@ -96,6 +96,22 @@ const currentVersionLabel = document.getElementById('current-version-label');
 const mobilePauseBtn = document.getElementById('mobile-pause-btn');
 const mobileRestartBtn = document.getElementById('mobile-restart-btn');
 
+// Rilevamento sicuro del dispositivo mobile
+function isMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+}
+
+// Se siamo da mobile, nascondi programmaticamente i tasti desktop in alto e il tasto esci
+document.addEventListener("DOMContentLoaded", () => {
+    if (isMobileDevice()) {
+        const desktopButtons = document.getElementById('in-game-buttons');
+        if (desktopButtons) desktopButtons.classList.add('force-hidden-mobile');
+
+        const mainExitBtn = document.getElementById('main-exit-btn');
+        if (mainExitBtn) mainExitBtn.classList.add('force-hidden-mobile');
+    }
+});
+
 if (mobilePauseBtn) {
     mobilePauseBtn.addEventListener('click', (e) => {
         if (e && e.cancelable) e.preventDefault();
