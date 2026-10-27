@@ -106,7 +106,6 @@ canvas {
     100% { transform: scale(1); opacity: 1; }
 }
 
-/* Schermate Sovrapposte interne al canvas-wrapper */
 #splash-screen, #login-screen, #start-screen, .modal, #pause-popup, #restart-confirm-popup, #game-over-screen, #update-popup, #download-screen {
     position: absolute;
     top: 4px;  
@@ -124,13 +123,11 @@ canvas {
     z-index: 20;
 }
 
-/* Schermata Splash e Download */
 #splash-screen, #download-screen {
     z-index: 40;
     background: linear-gradient(180deg, #100530 0%, #2a115c 50%, #4a1c82 100%);
 }
 
-/* Schermata di Arrivederci a schermo intero fisso per mobile */
 #goodbye-screen {
     position: fixed;
     top: 0;
@@ -350,7 +347,7 @@ button:active {
     pointer-events: none;
 }
 
-/* --- GESTIONE VISIBILITÀ DESKTOP VS MOBILE --- */
+/* --- GESTIONE VISIBILITÀ DESKTOP VS MOBILE (DEFINITIVA) --- */
 #in-game-buttons {
     display: flex;
     justify-content: space-between;
@@ -358,17 +355,14 @@ button:active {
     padding: 0 2px;
 }
 
-/* Regola CSS per l'occultamento forzato sui dispositivi touch */
-body.is-touch-device #in-game-buttons,
-body.is-touch-device .desktop-only,
-@media (hover: none) and (pointer: coarse) {
-    #in-game-buttons, 
-    .desktop-only {
+/* Sotto i 768px (Smartphone/Tablet) i tasti desktop spariscono completamente */
+@media screen and (max-width: 768px) {
+    .pc-only-btn {
         display: none !important;
     }
 }
 
-/* --- CONTROLLI MOBILE AGGIORNATI --- */
+/* --- CONTROLLI MOBILE --- */
 #mobile-controls {
     position: absolute; 
     bottom: -68px; 
@@ -438,23 +432,4 @@ body.is-touch-device .desktop-only,
     .game-container { width: 95vw; }
     .side-control-btn, .touch-action-btn { width: 68px; height: 55px; }
     .touch-action-btn { font-size: 10px; }
-}
-/* --- GESTIONE VISIBILITÀ DESKTOP VS MOBILE --- */
-#in-game-buttons {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 6px;
-    padding: 0 2px;
-}
-
-/* NASCONDI i pulsanti desktop e il tasto Esci SOLO sui dispositivi touch mobile, lasciandoli visibili su PC */
-@media (hover: none) and (pointer: coarse) {
-    #in-game-buttons, 
-    #main-exit-btn {
-        display: none !important;
-    }
-}
-/* Classe per nascondere i tasti desktop via JavaScript su mobile */
-.force-hidden-mobile {
-    display: none !important;
 }
