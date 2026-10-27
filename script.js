@@ -1,15 +1,17 @@
-// --- COSTANTI DI CONFIGURAZIONE E VERSIONING (v3.9) ---
-const CURRENT_GAME_VERSION = "3.9";
+// --- CONFIGURAZIONE & RESET v4.0 PER CAMPAGNA 10 MONDI ---
+const CURRENT_GAME_VERSION = "4.0";
 const BIN_ID = '6ac4b87cffd5d1605351f58d';
 const MASTER_KEY = '$2a$10$aplyk/beh6fEjv43q.yWK.yNbASVpWB2lHxQ8.O3c9aj0.zzW4Kuu';
 
+// Impostiamo la versione di reset legata alla v4.0
 const SAVE_DATA_VERSION = "reset_v4.0"; 
 
 if (localStorage.getItem('sky_ace_save_version') !== SAVE_DATA_VERSION) {
     localStorage.removeItem('sky_ace_total_score');
-    localStorage.removeItem('sky_ace_highscore');
+    localStorage.removeItem('sky_ace_highscore'); // Azzera il record punti personale
     localStorage.removeItem('sky_ace_unlocked');
     localStorage.removeItem('sky_ace_selected_id');
+    localStorage.setItem('sky_ace_max_world', '1'); // Riporta al Mondo 1
     localStorage.setItem('sky_ace_save_version', SAVE_DATA_VERSION);
 }
 
@@ -17,60 +19,46 @@ function isMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
 }
 
-function getMundoDifficultyParameters(worldNum, subLevelNum) {
-    let baseSpeed = 3 + (worldNum - 1) * 0.5;
-    let spawnRate = Math.max(20, 40 - (worldNum * 3));
-    let enemySpeed = 2.5 + (worldNum - 1) * 0.4;
-    
-    if (subLevelNum === 2) {
-        baseSpeed += 0.5;
-        spawnRate = Math.max(18, spawnRate - 5);
-    } else if (subLevelNum === 3) {
-        baseSpeed += 0.8;
-    }
-    return { obstacleSpeed: baseSpeed, spawnRate: spawnRate, enemySpeed: enemySpeed };
-}
+// --- DEFINIZIONE STRUTTURATA DEI 10 MONDI E DEGLI AEREI ASSOCIATI ---
+const WORLDS_DATA = [
+    { world: 1, name: "Training Skies", emoji: "✈️", planeName: "Aereo Standard", targetScore: 120, speed: 6, lives: 3, perk: "Bilanciato", shootType: "single" },
+    { world: 2, name: "Storm Valley", emoji: "🛩️", planeName: "Caccia Agile", targetScore: 250, speed: 8, lives: 2, perk: "Velocità +33% / Vita -1", shootType: "single" },
+    { world: 3, name: "Neon City", emoji: "🛫", planeName: "Doppio Cannone", targetScore: 400, speed: 6.5, lives: 3, perk: "Doppio Sparo di Base", shootType: "double" },
+    { world: 4, name: "Canyon Run", emoji: "🚁", planeName: "Girocottero", targetScore: 600, speed: 7, lives: 4, perk: "Scudo +1 Vita Extra", shootType: "single" },
+    { world: 5, name: "Asteroid Field", emoji: "🛬", planeName: "Interceptor", targetScore: 850, speed: 6.5, lives: 3, perk: "Triplo Sparo Nativo", shootType: "triple" },
+    { world: 6, name: "Volcano Alley", emoji: "🛸", planeName: "Stealth Jet", targetScore: 1150, speed: 7.5, lives: 3, perk: "Magnete Bonus integrato", shootType: "double" },
+    { world: 7, name: "Frozen Peaks", emoji: "⚡", planeName: "Thunderbolt", targetScore: 1500, speed: 8.5, lives: 3, perk: "Ricarica Fuoco Rapido", shootType: "triple" },
+    { world: 8, name: "Orbital Station", emoji: "🛡️", planeName: "Dreadnought", targetScore: 1900, speed: 5.5, lives: 5, perk: "Corazzato 5 Vite Base", shootType: "double" },
+    { world: 9, name: "Deep Nebula", emoji: "🌌", planeName: "Aero-Phantasm", targetScore: 2400, speed: 8, lives: 4, perk: "Sparo Quadruplo", shootType: "quad" },
+    { world: 10, name: "Core Final Bastion", emoji: "👑", planeName: "Sky Ace Supreme", targetScore: 3000, speed: 9, lives: 5, perk: "Potenza e Agilità Massima", shootType: "quad" }
+];
+
+let pilotId = localStorage.getItem('sky_ace_pilot_name') || "";
+let highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
+let maxWorldReached = parseInt(localStorage.getItem('sky_ace_max_world')) || 1;
+let selectedWorldIndex = 0;
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas ? canvas.getContext('2d') : null;
 const currentScoreEl = document.getElementById('current-score');
 const livesEl = document.getElementById('lives-display');
+const timerDisplayEl = document.getElementById('timer-display');
+const recordDisplayEl = document.getElementById('record-display');
 
 const mainExitBtn = document.getElementById('main-exit-btn');
 const goodbyeScreen = document.getElementById('goodbye-screen');
 const goodbyeMessage = document.getElementById('goodbye-message');
 
 function triggerGameExit() {
-    gameRunning = false;
-    gameStarted = false;
-    gamePaused = false;
-    
+    gameRunning = false; gameStarted = false; gamePaused = false;
     updateMobileControlsVisibility(false);
-
     if (startScreen) startScreen.classList.add('hidden');
-    if (pausePopup) pausePopup.classList.add('hidden');
-    if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
-    if (gameOverScreen) gameOverScreen.classList.add('hidden');
-    if (planeModal) planeModal.classList.add('hidden');
-    if (updatePopup) updatePopup.classList.add('hidden');
-    if (loginScreen) loginScreen.classList.add('hidden');
-    if (splashScreen) splashScreen.classList.add('hidden');
-    if (downloadScreen) downloadScreen.classList.add('hidden');
-
-    if (goodbyeMessage) {
-        goodbyeMessage.textContent = `Grazie per aver volato con noi, Comandante ${pilotId || 'Pilota'}! A presto. 👋`;
-    }
-
+    if (goodbyeMessage) goodbyeMessage.textContent = `Grazie per aver volato con noi, Comandante ${pilotId || 'Pilota'}! A presto. 👋`;
     if (goodbyeScreen) goodbyeScreen.classList.remove('hidden');
-
-    try {
-        window.close();
-    } catch (e) {}
+    try { window.close(); } catch (e) {}
 }
 
-if (mainExitBtn) {
-    mainExitBtn.addEventListener('click', triggerGameExit);
-}
+if (mainExitBtn) mainExitBtn.addEventListener('click', triggerGameExit);
 
 const splashScreen = document.getElementById('splash-screen');
 const splashProgressBar = document.getElementById('splash-progress-bar');
@@ -88,6 +76,8 @@ const downloadProgressText = document.getElementById('download-progress-text');
 const startScreen = document.getElementById('start-screen');
 const startBtn = document.getElementById('start-btn');
 const gameOverScreen = document.getElementById('game-over-screen');
+const gameOverTitle = document.getElementById('game-over-title');
+const gameOverReason = document.getElementById('game-over-reason');
 const finalScoreEl = document.getElementById('final-score');
 const playerNameInput = document.getElementById('player-name');
 const saveBtn = document.getElementById('save-btn');
@@ -147,54 +137,12 @@ if (mobileRestartBtn) {
 if (currentVersionLabel) currentVersionLabel.textContent = CURRENT_GAME_VERSION;
 
 let onlineVersionToInstall = null;
-
-const PLANES_DATA = [
-    { id: 0, emoji: '✈️', name: 'Aereo di Linea', points: 0 },
-    { id: 1, emoji: '🛩️', name: 'Monomotore', points: 200 },
-    { id: 2, emoji: '🛫', name: 'Jet', points: 400 },
-    { id: 3, emoji: '🛬', name: 'Caccia', points: 600 },
-    { id: 4, emoji: '🚁', name: 'Biposto', points: 800 },
-    { id: 5, emoji: '✈️', name: 'Fighter', points: 1000 },
-    { id: 6, emoji: '🛩️', name: 'Bimotore', points: 1200 },
-    { id: 7, emoji: '🛫', name: 'Idrovolante', points: 1400 },
-    { id: 8, emoji: '🛬', name: 'Jet Supersonico', points: 1600 },
-    { id: 9, emoji: '✈️', name: 'Aereo Acrobatico', points: 1800 }
-];
-
-let pilotId = localStorage.getItem('sky_ace_pilot_name') || "";
-let totalLifetimeScore = parseInt(localStorage.getItem('sky_ace_total_score')) || 0;
-let highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
-let unlockedPlanes = JSON.parse(localStorage.getItem('sky_ace_unlocked')) || [0]; 
-let selectedPlaneId = parseInt(localStorage.getItem('sky_ace_selected_id')) || 0;
-
-let timerDisplayEl = document.getElementById('timer-display');
-let recordDisplayEl = document.getElementById('record-display');
 if (recordDisplayEl) recordDisplayEl.textContent = highScore;
 
-let currentWorld = 1;      
-let currentSubLevel = 1;   
-let bossActive = false;
-let boss = {
-    x: canvas ? canvas.width / 2 - 40 : 160,
-    y: 40,
-    width: 70,
-    height: 60,
-    health: 50,
-    maxHealth: 50,
-    speed: 2.5,
-    direction: 1,
-    shootTimer: 0,
-    emoji: '🛸'
-};
-
 function saveLocalProgress() {
-    localStorage.setItem('sky_ace_total_score', totalLifetimeScore);
     localStorage.setItem('sky_ace_highscore', highScore);
-    localStorage.setItem('sky_ace_unlocked', JSON.stringify(unlockedPlanes));
-    localStorage.setItem('sky_ace_selected_id', selectedPlaneId);
-    if (pilotId) {
-        localStorage.setItem('sky_ace_pilot_name', pilotId);
-    }
+    localStorage.setItem('sky_ace_max_world', maxWorldReached);
+    if (pilotId) localStorage.setItem('sky_ace_pilot_name', pilotId);
 }
 
 async function loadProgressFromCloud() {
@@ -210,21 +158,13 @@ async function loadProgressFromCloud() {
 
         if (record.pilots && record.pilots[normalizedPilotId]) {
             let pData = record.pilots[normalizedPilotId];
-            totalLifetimeScore = Math.max(totalLifetimeScore, pData.totalLifetimeScore || 0);
             highScore = Math.max(highScore, pData.highScore || 0);
-            let cloudUnlocked = pData.unlockedPlanes || [0];
-            unlockedPlanes = Array.from(new Set([...unlockedPlanes, ...cloudUnlocked]));
-            if (pData.selectedPlaneId !== undefined) {
-                selectedPlaneId = pData.selectedPlaneId;
-            }
+            maxWorldReached = Math.max(maxWorldReached, pData.maxWorldReached || 1);
             saveLocalProgress();
         }
     } catch (error) {}
 
     if (recordDisplayEl) recordDisplayEl.textContent = highScore;
-    if (plane && PLANES_DATA[selectedPlaneId]) {
-        plane.emoji = PLANES_DATA[selectedPlaneId].emoji;
-    }
 }
 
 async function saveProgressToCloud() {
@@ -240,34 +180,16 @@ async function saveProgressToCloud() {
         let record = data.record || {};
 
         if (!record.pilots) record.pilots = {};
-        let existingCloudData = record.pilots[normalizedPilotId] || {};
-
-        let cloudTotal = existingCloudData.totalLifetimeScore || 0;
-        let cloudHigh = existingCloudData.highScore || 0;
-        let cloudUnlocked = existingCloudData.unlockedPlanes || [0];
-
-        let mergedTotal = Math.max(totalLifetimeScore, cloudTotal);
-        let mergedHigh = Math.max(highScore, cloudHigh);
-        let mergedUnlocked = Array.from(new Set([...unlockedPlanes, ...cloudUnlocked]));
+        let existing = record.pilots[normalizedPilotId] || {};
 
         record.pilots[normalizedPilotId] = {
-            totalLifetimeScore: mergedTotal,
-            highScore: mergedHigh,
-            unlockedPlanes: mergedUnlocked,
-            selectedPlaneId: selectedPlaneId
+            highScore: Math.max(highScore, existing.highScore || 0),
+            maxWorldReached: Math.max(maxWorldReached, existing.maxWorldReached || 1)
         };
-
-        totalLifetimeScore = mergedTotal;
-        highScore = mergedHigh;
-        unlockedPlanes = mergedUnlocked;
-        saveLocalProgress();
 
         await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Master-Key': MASTER_KEY
-            },
+            headers: { 'Content-Type': 'application/json', 'X-Master-Key': MASTER_KEY },
             body: JSON.stringify(record)
         });
     } catch (error) {}
@@ -280,11 +202,9 @@ function addParticles(x, y, color = '#ffd54f', count = 12) {
         const speed = Math.random() * 3 + 1;
         particles.push({
             x: x, y: y,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed,
+            vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
             radius: Math.random() * 3 + 1.5,
-            color: color, alpha: 1,
-            decay: Math.random() * 0.03 + 0.02
+            color: color, alpha: 1, decay: Math.random() * 0.03 + 0.02
         });
     }
 }
@@ -292,10 +212,8 @@ function addParticles(x, y, color = '#ffd54f', count = 12) {
 let plane = {
     x: canvas ? canvas.width / 2 - 20 : 180,
     y: canvas ? canvas.height - 80 : 520,
-    width: 40, 
-    height: 40,
-    speed: 6,
-    emoji: '✈️'
+    width: 40, height: 40,
+    speed: 6, emoji: '✈️'
 };
 
 let obstacles = [];
@@ -313,6 +231,16 @@ let gamePaused = false;
 let isCountdownActive = false;
 let subLevelTimer = 0;
 
+let currentSubLevel = 1;
+let bossActive = false;
+let boss = {
+    x: canvas ? canvas.width / 2 - 40 : 160,
+    y: 40, width: 70, height: 60,
+    health: 50, maxHealth: 50,
+    speed: 2.5, direction: 1,
+    shootTimer: 0, emoji: '🛸'
+};
+
 let shieldActive = false;
 let shieldTimer = 0;
 let doublePointsActive = false;
@@ -325,7 +253,7 @@ let keys = { ArrowLeft: false, ArrowRight: false };
 window.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft') keys.ArrowLeft = true;
     if (e.key === 'ArrowRight') keys.ArrowRight = true;
-    if (e.key === ' ' && !gameStarted && planeModal.classList.contains('hidden') && pausePopup.classList.contains('hidden') && restartConfirmPopup.classList.contains('hidden') && updatePopup.classList.contains('hidden') && splashScreen.classList.contains('hidden') && loginScreen.classList.contains('hidden')) {
+    if (e.key === ' ' && !gameStarted && planeModal.classList.contains('hidden') && pausePopup.classList.contains('hidden')) {
         e.preventDefault();
         startGame();
     }
@@ -353,9 +281,7 @@ async function runInitialLoading() {
             setTimeout(async () => {
                 if (splashScreen) splashScreen.classList.add('hidden');
                 let hasUpdate = await checkForUpdates();
-                if (!hasUpdate) {
-                    proceedToGameOrLogin();
-                }
+                if (!hasUpdate) proceedToGameOrLogin();
             }, 200);
         }
         if (splashProgressBar) splashProgressBar.style.width = progress + '%';
@@ -380,12 +306,12 @@ async function checkForUpdates() {
         });
         let data = await response.json();
         let onlineVersion = data.record.latestVersion || CURRENT_GAME_VERSION;
-        let changelogItems = data.record.changelog || ["Aggiornamenti generali."];
+        let changelogItems = data.record.changelog || ["Campagna 10 Mondi attivata."];
         let installedVer = localStorage.getItem('sky_ace_installed_version') || CURRENT_GAME_VERSION;
 
         if (onlineVersion !== installedVer) {
             onlineVersionToInstall = onlineVersion;
-            if (changelogTitle) changelogTitle.textContent = `Novità della versione ${onlineVersion}:`;
+            if (changelogTitle) changelogTitle.textContent = `Novità v${onlineVersion}:`;
             if (changelogList) {
                 changelogList.innerHTML = '';
                 changelogItems.forEach(item => {
@@ -398,9 +324,7 @@ async function checkForUpdates() {
             return true;
         }
         return false;
-    } catch (error) {
-        return false;
-    }
+    } catch (error) { return false; }
 }
 
 if (updateActionBtn) {
@@ -410,7 +334,7 @@ if (updateActionBtn) {
         
         let progress = 0;
         let interval = setInterval(() => {
-            progress += Math.floor(Math.random() * 10) + 4;
+            progress += 12;
             if (progress >= 100) {
                 progress = 100;
                 clearInterval(interval);
@@ -418,31 +342,26 @@ if (updateActionBtn) {
                     localStorage.setItem('sky_ace_installed_version', onlineVersionToInstall || CURRENT_GAME_VERSION);
                     if (downloadScreen) downloadScreen.classList.add('hidden');
                     proceedToGameOrLogin();
-                }, 500);
+                }, 400);
             }
             if (downloadProgressBar) downloadProgressBar.style.width = progress + '%';
             if (downloadProgressText) downloadProgressText.textContent = progress + '%';
-        }, 120);
+        }, 100);
     });
 }
 
 if (savePilotBtn) {
     savePilotBtn.addEventListener('click', async () => {
         let name = loginPilotInput ? loginPilotInput.value.trim() : "";
-        if (!name) {
-            alert("Inserisci un Nome Pilota valido!");
-            return;
-        }
+        if (!name) return alert("Inserisci un Nome Pilota valido!");
         pilotId = name;
         localStorage.setItem('sky_ace_pilot_name', pilotId);
         if (startPilotName) startPilotName.textContent = pilotId;
         if (playerNameInput) playerNameInput.value = pilotId;
         
         savePilotBtn.disabled = true;
-        savePilotBtn.textContent = "Caricamento Profilo...";
         await loadProgressFromCloud();
         savePilotBtn.disabled = false;
-        savePilotBtn.textContent = "CONFERMA E ENTRA 🚀";
         
         if (loginScreen) loginScreen.classList.add('hidden');
         if (startScreen) startScreen.classList.remove('hidden');
@@ -460,18 +379,13 @@ if (pauseBtn) {
 if (resumeBtn) {
     resumeBtn.addEventListener('click', () => {
         if (pausePopup) pausePopup.classList.add('hidden');
-        runCountdown(() => {
-            gamePaused = false;
-            updateGame();
-        });
+        runCountdown(() => { gamePaused = false; updateGame(); });
     });
 }
 
 if (pauseToMenuBtn) {
     pauseToMenuBtn.addEventListener('click', () => {
-        gamePaused = false;
-        gameRunning = false;
-        gameStarted = false;
+        gamePaused = false; gameRunning = false; gameStarted = false;
         updateMobileControlsVisibility(false);
         if (pausePopup) pausePopup.classList.add('hidden');
         if (startScreen) startScreen.classList.remove('hidden');
@@ -505,9 +419,7 @@ if (confirmRestartBtn) {
 
 if (restartToMenuBtn) {
     restartToMenuBtn.addEventListener('click', () => {
-        gamePaused = false;
-        gameRunning = false;
-        gameStarted = false;
+        gamePaused = false; gameRunning = false; gameStarted = false;
         updateMobileControlsVisibility(false);
         if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
         if (gameOverScreen) gameOverScreen.classList.add('hidden');
@@ -525,32 +437,19 @@ function updateMobileControlsVisibility(show) {
         mobileControls.classList.remove('in-game-active');
         return;
     }
-    if (show) {
-        mobileControls.classList.add('in-game-active');
-    } else {
-        mobileControls.classList.remove('in-game-active');
-    }
+    if (show) mobileControls.classList.add('in-game-active');
+    else mobileControls.classList.remove('in-game-active');
 }
 
 function setupInstantButton(btn, keyProp) {
     if (!btn) return;
-    const startAction = (e) => {
-        if (e && e.cancelable) e.preventDefault();
-        keys[keyProp] = true;
-    };
-    const stopAction = (e) => {
-        if (e && e.cancelable) e.preventDefault();
-        keys[keyProp] = false;
-    };
+    const startAction = (e) => { if (e && e.cancelable) e.preventDefault(); keys[keyProp] = true; };
+    const stopAction = (e) => { if (e && e.cancelable) e.preventDefault(); keys[keyProp] = false; };
     btn.addEventListener('touchstart', startAction, { passive: false });
     btn.addEventListener('touchend', stopAction, { passive: false });
     btn.addEventListener('touchcancel', stopAction, { passive: false });
-    btn.addEventListener('pointerdown', (e) => {
-        if (e.pointerType !== 'touch') startAction(e);
-    }, { passive: false });
-    btn.addEventListener('pointerup', (e) => {
-        if (e.pointerType !== 'touch') stopAction(e);
-    }, { passive: false });
+    btn.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch') startAction(e); }, { passive: false });
+    btn.addEventListener('pointerup', (e) => { if (e.pointerType !== 'touch') stopAction(e); }, { passive: false });
 }
 
 setupInstantButton(leftBtn, 'ArrowLeft');
@@ -559,42 +458,36 @@ setupInstantButton(rightBtn, 'ArrowRight');
 function renderPlaneGrid() {
     if (!planeGrid) return;
     planeGrid.innerHTML = '';
-    PLANES_DATA.forEach(p => {
+    
+    WORLDS_DATA.forEach((wData, idx) => {
         let slot = document.createElement('div');
-        let isUnlocked = unlockedPlanes.includes(p.id);
-        let canUnlock = totalLifetimeScore >= p.points && !isUnlocked;
-        let isSelected = selectedPlaneId === p.id;
+        let isUnlocked = wData.world <= maxWorldReached;
+        let isSelected = selectedWorldIndex === idx;
 
         slot.className = 'plane-slot';
         if (isUnlocked) {
             slot.classList.add('unlocked');
             if (isSelected) slot.classList.add('selected');
             slot.innerHTML = `
-                <div class="plane-emoji">${p.emoji}</div>
-                <div class="plane-info"><strong>${p.name}</strong><br>${isSelected ? 'Selezionato' : 'Sbloccato'}</div>
+                <div class="plane-emoji">${wData.emoji}</div>
+                <div class="plane-info">
+                    <strong>Mondo ${wData.world}</strong><br>
+                    ${wData.planeName}<br>
+                    <span style="color:#69f0ae;">Req: ${wData.targetScore} pt</span>
+                </div>
             `;
-            slot.onclick = async () => {
-                selectedPlaneId = p.id;
-                plane.emoji = p.emoji;
-                await saveProgressToCloud();
-                renderPlaneGrid();
-            };
-        } else if (canUnlock) {
-            slot.classList.add('unlockable');
-            slot.innerHTML = `
-                <div class="plane-emoji">${p.emoji}</div>
-                <div class="plane-info" style="color: #ff9800; font-weight: bold;">RISCATTA!</div>
-            `;
-            slot.onclick = async () => {
-                unlockedPlanes.push(p.id);
-                await saveProgressToCloud();
+            slot.onclick = () => {
+                selectedWorldIndex = idx;
                 renderPlaneGrid();
             };
         } else {
             slot.classList.add('locked');
             slot.innerHTML = `
                 <div class="plane-emoji">🔒</div>
-                <div class="plane-info">${p.name}<br>Req: ${p.points}pt</div>
+                <div class="plane-info">
+                    Mondo ${wData.world}<br>
+                    <span style="color:#e53935;">Completa Mondo ${wData.world - 1}</span>
+                </div>
             `;
         }
         planeGrid.appendChild(slot);
@@ -605,20 +498,7 @@ if (openPlaneModalBtn) {
     openPlaneModalBtn.onclick = async () => {
         await loadProgressFromCloud();
         if (displayPilotId) displayPilotId.textContent = pilotId;
-
         renderPlaneGrid();
-        let totalScoreDisplay = document.getElementById('total-score-display');
-        if (!totalScoreDisplay && planeModal) {
-            totalScoreDisplay = document.createElement('p');
-            totalScoreDisplay.id = 'total-score-display';
-            totalScoreDisplay.style.color = '#ffd54f';
-            totalScoreDisplay.style.fontSize = '14px';
-            totalScoreDisplay.style.margin = '4px 0 10px 0';
-            totalScoreDisplay.style.fontWeight = 'bold';
-            let modalTitle = planeModal.querySelector('h2');
-            if (modalTitle) modalTitle.after(totalScoreDisplay);
-        }
-        if (totalScoreDisplay) totalScoreDisplay.textContent = `Punti Totali Accumulati: ${totalLifetimeScore} pt`;
         if (planeModal) planeModal.classList.remove('hidden');
     };
 }
@@ -632,8 +512,6 @@ if (changePilotIdBtn) {
             if (displayPilotId) displayPilotId.textContent = pilotId;
             if (startPilotName) startPilotName.textContent = pilotId;
             if (playerNameInput) playerNameInput.value = pilotId;
-            
-            alert("Nome pilota aggiornato!");
             await loadProgressFromCloud();
             renderPlaneGrid();
         }
@@ -669,7 +547,7 @@ function runCountdown(onComplete) {
                 countdownText.style.animation = 'none';
                 void countdownText.offsetWidth;
                 countdownText.style.animation = 'popIn 0.3s ease-out';
-                countdownText.style.fontSize = '36px';
+                countdownText.style.fontSize = '32px';
                 countdownText.textContent = "BUON VOLO! 🚀";
             }
         } else {
@@ -682,12 +560,8 @@ function runCountdown(onComplete) {
 }
 
 function startGame() {
-    gameStarted = true;
-    gameRunning = true;
-    gamePaused = false;
-    
-    keys.ArrowLeft = false;
-    keys.ArrowRight = false;
+    gameStarted = true; gameRunning = true; gamePaused = false;
+    keys.ArrowLeft = false; keys.ArrowRight = false;
 
     if (startScreen) startScreen.classList.add('hidden');
     if (planeModal) planeModal.classList.add('hidden');
@@ -697,44 +571,35 @@ function startGame() {
     
     updateMobileControlsVisibility(true);
 
-    plane.emoji = PLANES_DATA[selectedPlaneId].emoji;
+    let activeConfig = WORLDS_DATA[selectedWorldIndex];
+    plane.emoji = activeConfig.emoji;
+    plane.speed = activeConfig.speed;
     plane.x = canvas.width / 2 - plane.width / 2;
-    obstacles = [];
-    enemyLasers = [];
-    playerLasers = [];
-    particles = [];
     
-    highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
+    obstacles = []; enemyLasers = []; playerLasers = []; particles = [];
     score = 0; 
-    lives = 3;
-    gameSpeed = 3;
+    lives = activeConfig.lives;
+    gameSpeed = 3 + (activeConfig.world - 1) * 0.4;
     subLevelTimer = 0;
     obstacleTimer = 0;
-    shieldActive = false;
-    doublePointsActive = false;
-    tripleShotActive = false;
+    shieldActive = false; doublePointsActive = false; tripleShotActive = false;
 
-    currentWorld = 1;
     currentSubLevel = 1;
     bossActive = false;
-    boss.health = 50;
-    boss.maxHealth = 50;
+    boss.health = 40 + activeConfig.world * 15;
+    boss.maxHealth = boss.health;
     boss.x = canvas.width / 2 - boss.width / 2;
     boss.y = 40;
 
     if (currentScoreEl) currentScoreEl.textContent = score;
-    if (timerDisplayEl) timerDisplayEl.textContent = 'Mondo 1-1';
+    if (timerDisplayEl) timerDisplayEl.textContent = `Mondo ${activeConfig.world}-1`;
     if (recordDisplayEl) recordDisplayEl.textContent = highScore;
     updateLivesDisplay();
 
-    runCountdown(() => {
-        updateGame();
-    });
+    runCountdown(() => { updateGame(); });
 }
 
-if (startBtn) {
-    startBtn.addEventListener('click', startGame);
-}
+if (startBtn) startBtn.addEventListener('click', startGame);
 
 function updateLivesDisplay() {
     if (livesEl) livesEl.textContent = '❤'.repeat(Math.max(0, lives));
@@ -745,28 +610,18 @@ function spawnObstacle() {
 
     let rand = Math.random();
     let type, symbol, points, width, height;
-    let difficultyBonus = (currentWorld - 1) * 0.05;
 
-    if (currentSubLevel === 1) {
-        if (rand < (0.45 - difficultyBonus)) { type = 'lightning'; symbol = '⚡'; points = 1; width = 40; height = 30; }
-        else if (rand < (0.68 - difficultyBonus)) { type = 'laserEnemy'; symbol = '🛩️'; points = -5; width = 40; height = 40; }
-        else if (rand < 0.80) { type = 'bonus'; symbol = '🌟'; points = 3; width = 40; height = 40; }
-        else if (rand < 0.90) { type = 'shield'; symbol = '🛡️'; points = 5; width = 40; height = 40; }
-        else if (rand < 0.96) { type = 'tripleShot'; symbol = '🎯'; points = 8; width = 40; height = 40; }
-        else { type = 'double'; symbol = '💎'; points = 10; width = 40; height = 40; }
-    } else if (currentSubLevel === 2) {
-        if (rand < (0.30 - difficultyBonus)) { type = 'lightning'; symbol = '⚡'; points = 1; width = 40; height = 30; }
-        else if (rand < (0.65 - difficultyBonus)) { type = 'laserEnemy'; symbol = '🛩️'; points = -5; width = 40; height = 40; }
-        else if (rand < 0.75) { type = 'bonus'; symbol = '🌟'; points = 3; width = 40; height = 40; }
-        else if (rand < 0.85) { type = 'shield'; symbol = '🛡️'; points = 5; width = 40; height = 40; }
-        else if (rand < 0.93) { type = 'tripleShot'; symbol = '🎯'; points = 8; width = 40; height = 40; }
-        else { type = 'double'; symbol = '💎'; points = 10; width = 40; height = 40; }
-    }
-    
+    if (rand < 0.40) { type = 'lightning'; symbol = '⚡'; points = 1; width = 40; height = 30; }
+    else if (rand < 0.68) { type = 'laserEnemy'; symbol = '🛩️'; points = -5; width = 40; height = 40; }
+    else if (rand < 0.80) { type = 'bonus'; symbol = '🌟'; points = 5; width = 40; height = 40; }
+    else if (rand < 0.90) { type = 'shield'; symbol = '🛡️'; points = 5; width = 40; height = 40; }
+    else if (rand < 0.96) { type = 'tripleShot'; symbol = '🎯'; points = 8; width = 40; height = 40; }
+    else { type = 'double'; symbol = '💎'; points = 10; width = 40; height = 40; }
+
     let x = Math.random() * (canvas.width - width);
     obstacles.push({
         x: x, y: -50, width: width, height: height,
-        speed: gameSpeed + (type === 'laserEnemy' ? 0.6 : Math.random() * 1.5),
+        speed: gameSpeed + Math.random() * 1.5,
         points: points, type: type, symbol: symbol, shootTimer: 0 
     });
 }
@@ -774,6 +629,8 @@ function spawnObstacle() {
 function draw() {
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    let activeConfig = WORLDS_DATA[selectedWorldIndex];
 
     for (let i = particles.length - 1; i >= 0; i--) {
         let p = particles[i];
@@ -798,8 +655,7 @@ function draw() {
     ctx.translate(plane.x + plane.width / 2, plane.y + plane.height / 2);
     ctx.rotate(-Math.PI / 4); 
     ctx.font = '36px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(plane.emoji, 0, 0);
     ctx.restore();
 
@@ -808,8 +664,7 @@ function draw() {
         ctx.translate(obs.x + obs.width / 2, obs.y + obs.height / 2);
         if (obs.type === 'laserEnemy') ctx.rotate(3 * Math.PI / 4); 
         ctx.font = '30px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(obs.symbol, 0, 0);
         ctx.restore();
     }
@@ -818,28 +673,24 @@ function draw() {
         ctx.save();
         ctx.translate(boss.x + boss.width / 2, boss.y + boss.height / 2);
         ctx.font = '52px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(boss.emoji, 0, 0);
         ctx.restore();
 
         let barWidth = canvas.width - 60;
         let barHeight = 8;
-        let barX = 30;
-        let barY = 12;
+        let barX = 30; let barY = 12;
         ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         ctx.fillRect(barX, barY, barWidth, barHeight);
         let healthPercent = Math.max(0, boss.health / boss.maxHealth);
         ctx.fillStyle = '#ff1744';
         ctx.fillRect(barX, barY, barWidth * healthPercent, barHeight);
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5;
         ctx.strokeRect(barX, barY, barWidth, barHeight);
 
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 10px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(`MONDO ${currentWorld} - BOSS FINALE (${Math.ceil(boss.health)}/${boss.maxHealth})`, canvas.width / 2, barY + 19);
+        ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(`MONDO ${activeConfig.world} - BOSS (${Math.ceil(boss.health)}/${boss.maxHealth})`, canvas.width / 2, barY + 19);
     }
 
     for (let laser of enemyLasers) {
@@ -853,85 +704,38 @@ function draw() {
     }
 
     ctx.save();
-    ctx.font = 'bold 13px sans-serif';
+    ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'left';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-    ctx.shadowBlur = 4;
-    ctx.fillStyle = currentSubLevel === 3 ? '#ff1744' : '#69f0ae';
-    let levelText = currentSubLevel === 3 ? `MONDO ${currentWorld}-3: BOSS FINALE` : `MONDO ${currentWorld}-${currentSubLevel}`;
-    ctx.fillText(levelText, 15, bossActive ? 42 : 25);
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)'; ctx.shadowBlur = 4;
+    ctx.fillStyle = score >= activeConfig.targetScore ? '#69f0ae' : '#ffd54f';
+    ctx.fillText(`Obiettivo Mondo ${activeConfig.world}: ${score}/${activeConfig.targetScore} pt`, 15, bossActive ? 42 : 25);
     ctx.restore();
-
-    let hudYOffset = bossActive ? 60 : 45;
-    if (doublePointsActive) {
-        ctx.fillStyle = '#69f0ae';
-        ctx.font = 'bold 14px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText('PUNTI x2!', 15, hudYOffset);
-        hudYOffset += 18;
-    }
-
-    if (tripleShotActive) {
-        ctx.fillStyle = '#ffd54f';
-        ctx.font = 'bold 14px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText(`RAFFICA x3: ${Math.ceil(tripleShotTimer / 60)}s`, 15, hudYOffset);
-    }
-
-    if (shieldActive) {
-        ctx.fillStyle = '#29b6f6';
-        ctx.font = 'bold 14px sans-serif';
-        ctx.textAlign = 'right';
-        ctx.fillText(`SCUDO: ${Math.ceil(shieldTimer / 60)}s`, canvas.width - 15, bossActive ? 42 : 25);
-    }
 }
 
 function updateGame() {
     if (!gameRunning) return;
-    if (gamePaused || isCountdownActive) {
-        return;
-    }
+    if (gamePaused || isCountdownActive) return;
 
+    let activeConfig = WORLDS_DATA[selectedWorldIndex];
     subLevelTimer++;
-    
-    let diff = getMundoDifficultyParameters(currentWorld, currentSubLevel);
 
     if (!bossActive) {
-        if (subLevelTimer < 900 && currentSubLevel === 1) {
-            gameSpeed = diff.obstacleSpeed + Math.floor(subLevelTimer / 300) * 0.2;
-            spawnRate = diff.spawnRate;
-        } else if (currentSubLevel === 1 && subLevelTimer >= 900) {
-            currentSubLevel = 2;
-            subLevelTimer = 0;
-            if (timerDisplayEl) timerDisplayEl.textContent = `Mondo ${currentWorld}-2`;
-        } else if (subLevelTimer < 1100 && currentSubLevel === 2) {
-            gameSpeed = diff.obstacleSpeed + 0.3;
-            spawnRate = diff.spawnRate;
-        } else if (currentSubLevel === 2 && subLevelTimer >= 1100) {
+        if (subLevelTimer >= 800 && currentSubLevel === 1) {
+            currentSubLevel = 2; subLevelTimer = 0;
+            if (timerDisplayEl) timerDisplayEl.textContent = `Mondo ${activeConfig.world}-2`;
+        } else if (subLevelTimer >= 950 && currentSubLevel === 2) {
             currentSubLevel = 3;
             bossActive = true;
-            boss.maxHealth = 50 + (currentWorld - 1) * 25;
-            boss.health = boss.maxHealth;
-            boss.speed = diff.obstacleSpeed * 0.7;
             boss.x = canvas.width / 2 - boss.width / 2;
             boss.y = 40;
             obstacles = [];
-            if (timerDisplayEl) timerDisplayEl.textContent = `Mondo ${currentWorld}-3 (Boss)`;
+            if (timerDisplayEl) timerDisplayEl.textContent = `Mondo ${activeConfig.world}-3 (Boss)`;
         }
     }
     
-    if (shieldActive) {
-        shieldTimer--;
-        if (shieldTimer <= 0) shieldActive = false;
-    }
-    if (doublePointsActive) {
-        doublePointsTimer--;
-        if (doublePointsTimer <= 0) doublePointsActive = false;
-    }
-    if (tripleShotActive) {
-        tripleShotTimer--;
-        if (tripleShotTimer <= 0) tripleShotActive = false;
-    }
+    if (shieldActive) { shieldTimer--; if (shieldTimer <= 0) shieldActive = false; }
+    if (doublePointsActive) { doublePointsTimer--; if (doublePointsTimer <= 0) doublePointsActive = false; }
+    if (tripleShotActive) { tripleShotTimer--; if (tripleShotTimer <= 0) tripleShotActive = false; }
 
     if (keys.ArrowLeft) plane.x -= plane.speed;
     if (keys.ArrowRight) plane.x += plane.speed;
@@ -940,38 +744,38 @@ function updateGame() {
     if (plane.x + plane.width > canvas.width) plane.x = canvas.width - plane.width;
 
     shootCooldown++;
-    if (shootCooldown > 22) {
-        if (tripleShotActive) {
+    let cooldownTarget = activeConfig.perk.includes("Rapida") ? 14 : 20;
+
+    if (shootCooldown > cooldownTarget) {
+        let mode = tripleShotActive ? "triple" : activeConfig.shootType;
+
+        if (mode === "single") {
+            playerLasers.push({ x: plane.x + plane.width / 2 - 3, y: plane.y, width: 6, height: 14, speed: 8 });
+        } else if (mode === "double") {
+            playerLasers.push({ x: plane.x + 4, y: plane.y, width: 5, height: 14, speed: 8 });
+            playerLasers.push({ x: plane.x + plane.width - 9, y: plane.y, width: 5, height: 14, speed: 8 });
+        } else if (mode === "triple") {
             playerLasers.push({ x: plane.x + 2, y: plane.y, width: 5, height: 14, speed: 8 });
             playerLasers.push({ x: plane.x + plane.width / 2 - 2, y: plane.y - 4, width: 5, height: 14, speed: 8 });
             playerLasers.push({ x: plane.x + plane.width - 7, y: plane.y, width: 5, height: 14, speed: 8 });
-        } else {
-            playerLasers.push({
-                x: plane.x + plane.width / 2 - 3,
-                y: plane.y,
-                width: 6,
-                height: 14,
-                speed: 8
-            });
+        } else if (mode === "quad") {
+            playerLasers.push({ x: plane.x, y: plane.y, width: 4, height: 14, speed: 9 });
+            playerLasers.push({ x: plane.x + 12, y: plane.y - 4, width: 4, height: 14, speed: 9 });
+            playerLasers.push({ x: plane.x + 24, y: plane.y - 4, width: 4, height: 14, speed: 9 });
+            playerLasers.push({ x: plane.x + 36, y: plane.y, width: 4, height: 14, speed: 9 });
         }
         shootCooldown = 0;
     }
 
     for (let i = playerLasers.length - 1; i >= 0; i--) {
         playerLasers[i].y -= playerLasers[i].speed;
-        if (playerLasers[i].y < 0) {
-            playerLasers.splice(i, 1);
-        }
+        if (playerLasers[i].y < 0) playerLasers.splice(i, 1);
     }
 
     for (let i = particles.length - 1; i >= 0; i--) {
         let p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.alpha -= p.decay;
-        if (p.alpha <= 0) {
-            particles.splice(i, 1);
-        }
+        p.x += p.vx; p.y += p.vy; p.alpha -= p.decay;
+        if (p.alpha <= 0) particles.splice(i, 1);
     }
 
     if (!bossActive) {
@@ -982,12 +786,10 @@ function updateGame() {
         }
     } else {
         boss.x += boss.speed * boss.direction;
-        if (boss.x <= 15 || boss.x + boss.width >= canvas.width - 15) {
-            boss.direction *= -1;
-        }
+        if (boss.x <= 15 || boss.x + boss.width >= canvas.width - 15) boss.direction *= -1;
 
         boss.shootTimer++;
-        if (boss.shootTimer > Math.max(30, 50 - currentWorld * 5)) {
+        if (boss.shootTimer > 45) {
             enemyLasers.push({ x: boss.x + 10, y: boss.y + boss.height, width: 6, height: 16, speed: 5 });
             enemyLasers.push({ x: boss.x + boss.width / 2 - 3, y: boss.y + boss.height, width: 6, height: 16, speed: 6 });
             enemyLasers.push({ x: boss.x + boss.width - 16, y: boss.y + boss.height, width: 6, height: 16, speed: 5 });
@@ -997,10 +799,8 @@ function updateGame() {
         for (let j = playerLasers.length - 1; j >= 0; j--) {
             let pLaser = playerLasers[j];
             if (
-                pLaser.x < boss.x + boss.width &&
-                pLaser.x + pLaser.width > boss.x &&
-                pLaser.y < boss.y + boss.height &&
-                pLaser.y + pLaser.height > boss.y
+                pLaser.x < boss.x + boss.width && pLaser.x + pLaser.width > boss.x &&
+                pLaser.y < boss.y + boss.height && pLaser.y + pLaser.height > boss.y
             ) {
                 addParticles(pLaser.x, pLaser.y, '#ffd54f', 6);
                 boss.health -= 1;
@@ -1008,18 +808,16 @@ function updateGame() {
 
                 if (boss.health <= 0) {
                     addParticles(boss.x + boss.width / 2, boss.y + boss.height / 2, '#69f0ae', 40);
-                    bossActive = false;
-                    score += 300 * currentWorld;
-                    if (score > highScore) {
-                        highScore = score;
-                        if (recordDisplayEl) recordDisplayEl.textContent = highScore;
+                    
+                    if (score >= activeConfig.targetScore) {
+                        if (activeConfig.world === maxWorldReached && maxWorldReached < 10) {
+                            maxWorldReached++;
+                        }
+                        triggerVictory();
+                    } else {
+                        triggerGameOver("Mondo non superato: Obiettivo Punti insufficiente!");
                     }
-                    if (currentScoreEl) currentScoreEl.textContent = score;
-
-                    currentWorld++;
-                    currentSubLevel = 1;
-                    subLevelTimer = 0;
-                    if (timerDisplayEl) timerDisplayEl.textContent = `Mondo ${currentWorld}-1`;
+                    return;
                 }
                 break;
             }
@@ -1036,15 +834,10 @@ function updateGame() {
             plane.y + plane.height - padding > enemyLasers[i].y + enemyLasers[i].height
         ) {
             addParticles(plane.x + plane.width / 2, plane.y + plane.height / 2, '#ff1744', 12);
-            if (shieldActive) {
-                shieldActive = false;
-            } else {
-                lives--;
-                updateLivesDisplay();
-                if (lives <= 0) {
-                    triggerGameOver();
-                    return;
-                }
+            if (shieldActive) { shieldActive = false; } 
+            else {
+                lives--; updateLivesDisplay();
+                if (lives <= 0) { triggerGameOver("Nessuna vita rimasta!"); return; }
             }
             enemyLasers.splice(i, 1);
             continue;
@@ -1056,55 +849,29 @@ function updateGame() {
         let obs = obstacles[i];
         obs.y += obs.speed;
 
+        if (activeConfig.perk.includes("Magnete") && obs.type !== 'lightning' && obs.type !== 'laserEnemy') {
+            if (Math.abs(obs.x - plane.x) < 100 && obs.y > plane.y - 120) {
+                if (obs.x < plane.x) obs.x += 2.5;
+                else if (obs.x > plane.x) obs.x -= 2.5;
+            }
+        }
+
         for (let j = playerLasers.length - 1; j >= 0; j--) {
             let pLaser = playerLasers[j];
             if (
                 obs.type === 'laserEnemy' &&
-                pLaser.x < obs.x + obs.width &&
-                pLaser.x + pLaser.width > obs.x &&
-                pLaser.y < obs.y + obs.height &&
-                pLaser.y + pLaser.height > obs.y
+                pLaser.x < obs.x + obs.width && pLaser.x + pLaser.width > obs.x &&
+                pLaser.y < obs.y + obs.height && pLaser.y + pLaser.height > obs.y
             ) {
                 addParticles(obs.x + obs.width / 2, obs.y + obs.height / 2, '#69f0ae', 10);
                 score += 10;
-                if (score > highScore) {
-                    highScore = score;
-                    if (recordDisplayEl) recordDisplayEl.textContent = highScore;
-                }
                 if (currentScoreEl) currentScoreEl.textContent = score;
-
-                if (Math.random() < 0.4) {
-                    obs.type = 'tripleShot';
-                    obs.symbol = '🎯';
-                    obs.y += 10;
-                    playerLasers.splice(j, 1);
-                    break;
-                }
-
-                obstacles.splice(i, 1);
-                playerLasers.splice(j, 1);
+                obstacles.splice(i, 1); playerLasers.splice(j, 1);
                 break;
             }
         }
 
         if (!obstacles[i]) continue;
-
-        if (obs.type === 'laserEnemy') {
-            if (obs.x < plane.x) obs.x += 1.0; 
-            else if (obs.x > plane.x) obs.x -= 1.0; 
-
-            obs.shootTimer++;
-            if (obs.shootTimer > 80) { 
-                enemyLasers.push({
-                    x: obs.x + obs.width / 2 - 3,
-                    y: obs.y + obs.height,
-                    width: 6,
-                    height: 16,
-                    speed: 6
-                });
-                obs.shootTimer = 0;
-            }
-        }
 
         let padding = 10;
         if (
@@ -1113,67 +880,32 @@ function updateGame() {
             plane.y + padding < obs.y + obs.height - padding &&
             plane.y + plane.height - padding > obs.y + padding
         ) {
-            addParticles(obs.x + obs.width / 2, obs.y + obs.height / 2, obs.type === 'bonus' ? '#69f0ae' : '#ff9800', 12);
+            addParticles(obs.x + obs.width / 2, obs.y + obs.height / 2, '#ff9800', 12);
             if (obs.type === 'lightning') {
-                if (shieldActive) {
-                    shieldActive = false;
-                    obstacles.splice(i, 1);
-                } else {
-                    lives--;
-                    updateLivesDisplay();
-                    obstacles.splice(i, 1);
-                    if (lives <= 0) {
-                        triggerGameOver();
-                        return;
-                    }
+                if (shieldActive) { shieldActive = false; } 
+                else {
+                    lives--; updateLivesDisplay();
+                    if (lives <= 0) { triggerGameOver("Aereo distrutto dai fulmini!"); return; }
                 }
             } else if (obs.type === 'laserEnemy') {
-                if (shieldActive) {
-                    shieldActive = false;
-                    obstacles.splice(i, 1);
-                } else {
-                    score = Math.max(0, score - 5);
-                    if (score > highScore) {
-                        highScore = score;
-                        if (recordDisplayEl) recordDisplayEl.textContent = highScore;
-                    }
-                    if (currentScoreEl) currentScoreEl.textContent = score;
-                    obstacles.splice(i, 1);
-                }
+                if (shieldActive) shieldActive = false;
+                else score = Math.max(0, score - 5);
             } else {
-                let gainedPoints = 0;
-                if (obs.type === 'bonus') {
-                    gainedPoints = doublePointsActive ? obs.points * 2 : obs.points;
-                } else if (obs.type === 'shield') {
-                    shieldActive = true;
-                    shieldTimer = 300;
-                } else if (obs.type === 'tripleShot') {
-                    tripleShotActive = true;
-                    tripleShotTimer = 850;
-                } else if (obs.type === 'double') {
-                    doublePointsActive = true;
-                    doublePointsTimer = 480;
-                }
+                let gainedPoints = obs.type === 'bonus' ? (doublePointsActive ? obs.points * 2 : obs.points) : 0;
+                if (obs.type === 'shield') { shieldActive = true; shieldTimer = 300; }
+                else if (obs.type === 'tripleShot') { tripleShotActive = true; tripleShotTimer = 800; }
+                else if (obs.type === 'double') { doublePointsActive = true; doublePointsTimer = 500; }
 
                 score += gainedPoints;
-                if (score > highScore) {
-                    highScore = score;
-                    if (recordDisplayEl) recordDisplayEl.textContent = highScore;
-                }
                 if (currentScoreEl) currentScoreEl.textContent = score;
-                obstacles.splice(i, 1);
             }
+            obstacles.splice(i, 1);
             continue;
         }
 
         if (obs.y > canvas.height) {
             if (obs.type === 'lightning') {
-                let gainedPoints = doublePointsActive ? 2 : 1;
-                score += gainedPoints;
-                if (score > highScore) {
-                    highScore = score;
-                    if (recordDisplayEl) recordDisplayEl.textContent = highScore;
-                }
+                score += doublePointsActive ? 2 : 1;
                 if (currentScoreEl) currentScoreEl.textContent = score;
             }
             obstacles.splice(i, 1);
@@ -1184,23 +916,34 @@ function updateGame() {
     requestAnimationFrame(updateGame);
 }
 
-async function triggerGameOver() {
+async function triggerVictory() {
     gameRunning = false;
     updateMobileControlsVisibility(false);
-    
-    if (score > highScore) highScore = score;
-    localStorage.setItem('sky_ace_highscore', highScore);
 
-    totalLifetimeScore += score;
-    localStorage.setItem('sky_ace_total_score', totalLifetimeScore);
+    let activeConfig = WORLDS_DATA[selectedWorldIndex];
+    if (score > highScore) highScore = score;
 
     await saveProgressToCloud();
 
+    if (gameOverTitle) gameOverTitle.textContent = "🏆 MONDO COMPLETATO!";
+    if (gameOverReason) gameOverReason.textContent = `Hai superato il Mondo ${activeConfig.world}! Nuovo Mondo sbloccato!`;
     if (finalScoreEl) finalScoreEl.textContent = score;
-    if (playerNameInput && pilotId) playerNameInput.value = pilotId;
-    if (saveScoreSection) saveScoreSection.classList.remove('hidden'); 
-    if (gameOverScreen) gameOverScreen.classList.remove('hidden');    
-    fetchLeaderboard(); 
+    if (gameOverScreen) gameOverScreen.classList.remove('hidden');
+    fetchLeaderboard();
+}
+
+async function triggerGameOver(reason = "") {
+    gameRunning = false;
+    updateMobileControlsVisibility(false);
+
+    if (score > highScore) highScore = score;
+    await saveProgressToCloud();
+
+    if (gameOverTitle) gameOverTitle.textContent = "MISSIONE FALLITA";
+    if (gameOverReason) gameOverReason.textContent = reason || `Punteggio finale: ${score}`;
+    if (finalScoreEl) finalScoreEl.textContent = score;
+    if (gameOverScreen) gameOverScreen.classList.remove('hidden');
+    fetchLeaderboard();
 }
 
 async function fetchLeaderboard(highlightName = null, highlightScore = null) {
@@ -1230,8 +973,7 @@ if (saveBtn) {
     saveBtn.addEventListener('click', async () => {
         let name = playerNameInput ? playerNameInput.value.trim() : (pilotId || "Pilota Anonimo");
         if (!name) name = "Pilota Anonimo";
-        saveBtn.disabled = true;
-        saveBtn.textContent = "Salvataggio...";
+        saveBtn.disabled = true; saveBtn.textContent = "Salvataggio...";
 
         try {
             let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
@@ -1245,18 +987,14 @@ if (saveBtn) {
 
             await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Master-Key': MASTER_KEY
-                },
+                headers: { 'Content-Type': 'application/json', 'X-Master-Key': MASTER_KEY },
                 body: JSON.stringify(record)
             });
 
             if (saveScoreSection) saveScoreSection.classList.add("hidden"); 
             fetchLeaderboard(name, score); 
         } catch (error) {
-            saveBtn.disabled = false;
-            saveBtn.textContent = "Salva in Classifica";
+            saveBtn.disabled = false; saveBtn.textContent = "Salva in Classifica";
         }
     });
 }
@@ -1265,10 +1003,7 @@ if (restartBtn) {
     restartBtn.addEventListener('click', () => {
         if (gameOverScreen) gameOverScreen.classList.add('hidden');
         if (saveScoreSection) saveScoreSection.classList.remove('hidden');
-        if (saveBtn) {
-            saveBtn.disabled = false;
-            saveBtn.textContent = "Salva in Classifica";
-        }
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "Salva in Classifica"; }
         startGame();
     });
 }
@@ -1277,12 +1012,8 @@ if (menuBtn) {
     menuBtn.addEventListener('click', () => {
         if (gameOverScreen) gameOverScreen.classList.add('hidden');
         if (saveScoreSection) saveScoreSection.classList.remove('hidden');
-        if (saveBtn) {
-            saveBtn.disabled = false;
-            saveBtn.textContent = "Salva in Classifica";
-        }
-        gameStarted = false;
-        gameRunning = false;
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "Salva in Classifica"; }
+        gameStarted = false; gameRunning = false;
         updateMobileControlsVisibility(false);
         if (startScreen) startScreen.classList.remove('hidden');
     });
