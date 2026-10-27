@@ -439,3 +439,18 @@ body.is-touch-device .desktop-only,
     .side-control-btn, .touch-action-btn { width: 68px; height: 55px; }
     .touch-action-btn { font-size: 10px; }
 }
+/* --- GESTIONE VISIBILITÀ DESKTOP VS MOBILE --- */
+#in-game-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    padding: 0 2px;
+}
+
+/* NASCONDI i pulsanti desktop e il tasto Esci SOLO sui dispositivi touch mobile, lasciandoli visibili su PC */
+@media (hover: none) and (pointer: coarse) {
+    #in-game-buttons, 
+    #main-exit-btn {
+        display: none !important;
+    }
+}
