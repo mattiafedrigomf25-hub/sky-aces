@@ -358,9 +358,10 @@ button:active {
     padding: 0 2px;
 }
 
-/* Nascondi i tasti in alto e il tasto Esci (desktop-only) SOLO sui veri dispositivi touch mobile */
+/* Nascondi i tasti in alto (Pausa e Ricomincia) e il tasto Esci dal Gioco SOLO sui veri dispositivi touch mobile */
 @media (hover: none) and (pointer: coarse) {
-    #in-game-buttons, .desktop-only {
+    #in-game-buttons, 
+    #main-exit-btn {
         display: none !important;
     }
 }
@@ -435,4 +436,3 @@ button:active {
     .game-container { width: 95vw; }
     .side-control-btn, .touch-action-btn { width: 68px; height: 55px; }
     .touch-action-btn { font-size: 10px; }
-}
