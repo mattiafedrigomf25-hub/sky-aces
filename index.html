@@ -23,6 +23,12 @@
                 <span id="lives-display">❤❤❤</span>
             </div>
         </div>
+        
+        <!-- Pulsanti In-Game Desktop -->
+        <div id="in-game-buttons" class="desktop-only">
+            <button id="pause-btn" style="background: #ff9800; font-size:12px; padding:5px 12px;">⏸️ Pausa</button>
+            <button id="restart-prompt-btn" style="background: #e53935; font-size:12px; padding:5px 12px;">🔄 Ricomincia</button>
+        </div>
 
         <div class="canvas-wrapper">
             <canvas id="gameCanvas" width="400" height="600"></canvas>
@@ -84,8 +90,9 @@
                 <div class="plane-selection" style="display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 200px; align-items: center;">
                     <button id="open-plane-modal-btn" style="background-color: #ab47bc; width: 100%;">Hangar Aerei ✈️</button>
                     <button id="start-btn" style="background-color: #29b6f6; font-size: 16px; padding: 12px 24px; width: 100%;">AVVIA GIOCO 🚀</button>
+                    <button id="main-exit-btn" class="desktop-only" style="background-color: #d32f2f; font-size: 14px; padding: 10px 20px; width: 100%; margin-top: 5px;">Esci dal Gioco 🚪</button>
                 </div>
-                <p class="start-hint" style="margin-top: 12px;">Usa i tasti laterali per pilotare</p>
+                <p class="start-hint" style="margin-top: 12px;">Usa le frecce ⬅️ ➡️ della tastiera o i tasti laterali</p>
                 <div class="sync-info">☁️ Pilota: <span id="start-pilot-name" style="color:#ffd54f;">---</span></div>
                 <div class="version-info">v<span id="current-version-label">3.9</span></div>
             </div>
@@ -165,6 +172,14 @@
                 </button>
             </div>
         </div>
+    </div>
+
+    <!-- 6. SCHERMATA DI ARRIVEDERCI -->
+    <div id="goodbye-screen" class="hidden">
+        <div class="splash-art">👋🚀</div>
+        <div class="loading-title">SESSIONE TERMINATA</div>
+        <div id="goodbye-message" class="loading-subtitle" style="font-size: 15px; color: #fff; margin-top: 10px;">Grazie per aver volato con Sky Ace!</div>
+        <p style="font-size: 12px; color: #a1887f; margin-top: 15px;">Puoi chiudere questa scheda o minimizzare il browser.</p>
     </div>
 
     <script src="script.js"></script>
