@@ -377,7 +377,6 @@ button:active {
     padding: 0 5px; 
     box-sizing: border-box; 
     z-index: 25; 
-    touch-action: none;
 }
 
 #mobile-controls.in-game-active {
@@ -399,7 +398,6 @@ button:active {
     box-shadow: 0 4px 10px rgba(0,0,0,0.4);
     user-select: none;
     -webkit-user-select: none;
-    touch-action: none;
     cursor: pointer;
 }
 
@@ -423,6 +421,7 @@ button:active {
     padding: 0 4px;
     text-align: center;
     line-height: 1.2;
+    touch-action: manipulation;
 }
 
 .side-control-btn:active, .touch-action-btn:active {
