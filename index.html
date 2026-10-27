@@ -8,422 +8,7 @@
     <meta name="theme-color" content="#1a0b4b">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
-    <style>
-        body {
-            background-color: #fad2e1;
-            color: white;
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            min-height: 100vh;
-            margin: 0;
-            padding-top: 5px;
-            overflow: auto;
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .game-container {
-            text-align: center;
-            position: relative;
-            width: 100%;
-            max-width: 400px;
-            box-sizing: border-box;
-            padding: 5px;
-        }
-
-        h1 {
-            margin: 2px 0 6px 0;
-            color: #333;
-            font-size: 28px;
-            font-weight: 800;
-            letter-spacing: 1px;
-        }
-
-        .score-board {
-            margin-bottom: 6px;
-            font-size: 14px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 2px;
-            color: #333;
-            font-weight: bold;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        #lives-display {
-            font-size: 14px;
-            letter-spacing: 0px;
-        }
-
-        .canvas-wrapper {
-            position: relative;
-            width: 100%;
-            max-width: 400px;
-            height: 600px;
-            margin: 0 auto;
-            margin-bottom: 75px;
-        }
-
-        canvas {
-            display: block;
-            background-color: #d0e3fc;
-            border: 4px solid #ffd54f;
-            border-radius: 12px;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            box-sizing: border-box;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* Countdown Overlay In-Game */
-        #countdown-overlay {
-            position: absolute;
-            top: 4px;
-            left: 4px;
-            right: 4px;
-            bottom: 4px;
-            background: rgba(16, 5, 48, 0.7);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 35;
-            pointer-events: none;
-        }
-
-        #countdown-text {
-            font-size: 72px;
-            font-weight: 900;
-            color: #ffd54f;
-            text-shadow: 0 0 20px rgba(255, 213, 79, 0.8), 0 0 40px rgba(0, 0, 0, 0.9);
-            animation: popIn 0.3s ease-out;
-            text-align: center;
-        }
-
-        @keyframes popIn {
-            0% { transform: scale(0.3); opacity: 0; }
-            70% { transform: scale(1.15); opacity: 1; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        /* Schermate Sovrapposte interne al canvas-wrapper */
-        #splash-screen, #login-screen, #start-screen, .modal, #pause-popup, #restart-confirm-popup, #game-over-screen, #update-popup, #download-screen {
-            position: absolute;
-            top: 4px;  
-            left: 4px;  
-            right: 4px;
-            bottom: 4px;
-            background-color: rgba(26, 11, 75, 0.96);
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 15px;
-            box-sizing: border-box;
-            z-index: 20;
-        }
-
-        #splash-screen, #download-screen {
-            z-index: 40;
-            background: linear-gradient(180deg, #100530 0%, #2a115c 50%, #4a1c82 100%);
-        }
-
-        #goodbye-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: linear-gradient(180deg, #100530 0%, #2a115c 50%, #4a1c82 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            box-sizing: border-box;
-            z-index: 99999;
-        }
-
-        #goodbye-screen.hidden {
-            display: none !important;
-        }
-
-        .splash-art {
-            font-size: 60px;
-            margin-bottom: 10px;
-            text-shadow: 0 0 15px rgba(255, 213, 79, 0.6);
-            animation: float 2.5s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-
-        .loading-title {
-            color: #ffd54f;
-            font-size: 26px;
-            font-weight: 800;
-            margin-bottom: 5px;
-            letter-spacing: 1.5px;
-        }
-
-        .loading-subtitle {
-            font-size: 13px;
-            color: #b39ddb;
-            margin-bottom: 25px;
-        }
-
-        .progress-bar-container {
-            width: 80%;
-            height: 16px;
-            background: rgba(255, 255, 255, 0.15);
-            border: 2px solid #ffd54f;
-            border-radius: 10px;
-            overflow: hidden;
-            position: relative;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-        }
-
-        .progress-bar {
-            width: 0%;
-            height: 100%;
-            background: linear-gradient(90deg, #69f0ae, #29b6f6);
-            border-radius: 8px;
-            transition: width 0.1s linear;
-        }
-
-        .progress-text {
-            font-size: 12px;
-            color: #fff;
-            margin-top: 8px;
-            font-weight: bold;
-        }
-
-        #start-screen h2, #login-screen h2, .modal h2, #pause-popup h2, #restart-confirm-popup h2, #game-over-screen h2 {
-            color: #ffd54f;
-            font-size: 24px;
-            margin-bottom: 10px;
-        }
-
-        #pause-popup p, #restart-confirm-popup p, #login-screen p {
-            font-size: 14px;
-            margin-bottom: 20px;
-            color: #ddd;
-            text-align: center;
-        }
-
-        .popup-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            width: 100%;
-            max-width: 240px;
-        }
-
-        .plane-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            max-height: 230px;
-            overflow-y: auto;
-            margin-bottom: 10px;
-            padding: 5px;
-            width: 100%;
-        }
-
-        .plane-slot {
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid #512da8;
-            border-radius: 8px;
-            padding: 8px;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.1s ease, background-color 0.1s ease;
-        }
-
-        .plane-slot:active {
-            transform: scale(0.95);
-        }
-
-        .plane-slot .plane-emoji { font-size: 24px; margin-bottom: 4px; }
-        .plane-slot .plane-info { font-size: 11px; color: #b39ddb; }
-        .plane-slot.locked { opacity: 0.5; border-color: #444; }
-        .plane-slot.unlocked { border-color: #ab47bc; }
-        .plane-slot.selected { border-color: #69f0ae; background: rgba(105, 240, 174, 0.15); }
-        .plane-slot.unlockable { border-color: #ff9800; }
-
-        .cloud-box {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px dashed #ab47bc;
-            border-radius: 6px;
-            padding: 6px;
-            margin-bottom: 8px;
-            width: 90%;
-            font-size: 11px;
-            color: #b39ddb;
-        }
-
-        #game-over-screen { justify-content: flex-start; padding-top: 25px; z-index: 30; }
-        #game-over-screen p { font-size: 13px; margin: 5px 0; }
-        #save-score-section { margin: 6px 0; }
-        #player-name, #login-pilot-input { padding: 8px; border-radius: 6px; border: none; font-size: 14px; width: 180px; text-align: center; }
-
-        button {
-            padding: 10px 16px;
-            background-color: #29b6f6;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 14px;
-            box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25);
-            transition: transform 0.08s ease, box-shadow 0.08s ease, background-color 0.1s ease;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        button:hover {
-            filter: brightness(1.1);
-        }
-
-        button:active {
-            transform: translateY(2px) scale(0.96);
-            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
-            filter: brightness(0.9);
-        }
-
-        #leaderboard-container {
-            width: 100%; max-height: 130px; overflow-y: auto; margin: 6px 0;
-            background: rgba(0, 0, 0, 0.3); border-radius: 6px; padding: 6px; box-sizing: border-box;
-        }
-        #leaderboard-container h3 { margin: 0 0 5px 0; font-size: 14px; color: #ffd54f; }
-        #leaderboard-list { list-style: none; padding: 0; margin: 0; text-align: left; }
-        #leaderboard-list li { padding: 3px 5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 12px; display: flex; justify-content: space-between; }
-        #leaderboard-list li.highlight { background-color: rgba(255, 213, 79, 0.3); color: #ffd54f; font-weight: bold; }
-
-        #update-popup {
-            background-color: rgba(13, 2, 33, 0.98);
-            z-index: 50;
-            text-align: center;
-        }
-        #update-popup h2 { color: #69f0ae; font-size: 22px; margin-bottom: 8px; }
-        #update-popup p { font-size: 13px; margin: 4px 0; line-height: 1.3; }
-        
-        .changelog-box {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(105, 240, 174, 0.3);
-            border-radius: 6px;
-            padding: 10px;
-            margin: 10px 0;
-            width: 90%;
-            text-align: left;
-            max-height: 120px;
-            overflow-y: auto;
-        }
-        .changelog-box h4 { margin: 0 0 5px 0; color: #ffd54f; font-size: 13px; }
-        .changelog-box ul { margin: 0; padding-left: 15px; font-size: 11px; color: #ddd; }
-        .changelog-box li { margin-bottom: 3px; }
-
-        .sync-info {
-            font-size: 10px;
-            color: #69f0ae;
-            margin-top: 6px;
-        }
-
-        .version-info {
-            position: absolute;
-            bottom: 8px;
-            left: 0;
-            right: 0;
-            text-align: center;
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.35);
-            letter-spacing: 0.5px;
-            pointer-events: none;
-        }
-
-        /* Controlli Mobile */
-        #mobile-controls {
-            position: absolute; 
-            bottom: -68px; 
-            left: 0; 
-            right: 0;
-            display: none !important; 
-            justify-content: space-between; 
-            padding: 0 5px; 
-            box-sizing: border-box; 
-            z-index: 25; 
-            touch-action: none;
-        }
-
-        #mobile-controls.in-game-active {
-            display: flex !important; 
-            opacity: 1;
-        }
-
-        .side-control-btn {
-            pointer-events: auto;
-            width: 120px;
-            height: 60px;
-            background: rgba(26, 11, 75, 0.7);
-            border: 3px solid #ffd54f;
-            border-radius: 12px;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: none;
-            padding: 5px;
-        }
-
-        .svg-arrow {
-            width: 80%;
-            height: auto;
-            fill: currentColor;
-        }
-
-        /* Effetto pressione sui pulsanti dei controlli mobile (Corretto dentro lo <style>) */
-        #mobile-controls button:active,
-        .mobile-btn:active {
-            transform: scale(0.92) !important;
-            filter: brightness(1.2);
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3) !important;
-            background: rgba(41, 182, 246, 0.9) !important;
-        }
-
-        @media (max-width: 768px), (pointer: coarse) {
-            .desktop-only {
-                display: none !important;
-            }
-        }
-
-        @media (max-width: 420px) {
-            .canvas-wrapper { width: 92vw; height: calc(92vw * 1.5); max-height: 75vh; }
-            .game-container { width: 95vw; }
-            .side-control-btn { width: 110px; height: 55px; font-size: 22px; }
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -439,8 +24,8 @@
             </div>
         </div>
         
-        <!-- Pulsanti In-Game -->
-        <div id="in-game-buttons" style="display: none; justify-content: space-between; margin-bottom: 6px; padding: 0 2px;">
+        <!-- Pulsanti In-Game Desktop -->
+        <div id="in-game-buttons">
             <button id="pause-btn" style="background: #ff9800; font-size:12px; padding:5px 12px;">⏸️ Pausa</button>
             <button id="restart-prompt-btn" style="background: #e53935; font-size:12px; padding:5px 12px;">🔄 Ricomincia</button>
         </div>
@@ -509,7 +94,7 @@
                 </div>
                 <p class="start-hint" style="margin-top: 12px;">Usa le frecce ⬅️ ➡️ della tastiera o i tasti laterali</p>
                 <div class="sync-info">☁️ Pilota: <span id="start-pilot-name" style="color:#ffd54f;">---</span></div>
-                <div class="version-info">v<span id="current-version-label">3.9</span></div>
+                <div class="version-info">v<span id="current-version-label">3.5</span></div>
             </div>
 
             <!-- Modale Hangar -->
@@ -567,13 +152,19 @@
                 </div>
             </div>
 
-           <!-- Controlli Mobile -->
+            <!-- Controlli Mobile Aggiornati -->
             <div id="mobile-controls">
                 <button id="left-btn" class="side-control-btn" aria-label="Sinistra">
                     <svg viewBox="0 0 24 24" class="svg-arrow">
                         <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
                     </svg>
                 </button>
+                
+                <div id="center-action-btns">
+                    <button id="mobile-pause-btn" class="touch-action-btn">⏸️ Pausa</button>
+                    <button id="mobile-restart-btn" class="touch-action-btn">🔄 Ricomincia</button>
+                </div>
+
                 <button id="right-btn" class="side-control-btn" aria-label="Destra">
                     <svg viewBox="0 0 24 24" class="svg-arrow">
                         <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
@@ -583,7 +174,7 @@
         </div>
     </div>
 
-    <!-- 6. SCHERMATA DI ARRIVEDERCI / USCITA DEFINITIVA -->
+    <!-- 6. SCHERMATA DI ARRIVEDERCI -->
     <div id="goodbye-screen" class="hidden">
         <div class="splash-art">👋🚀</div>
         <div class="loading-title">SESSIONE TERMINATA</div>
