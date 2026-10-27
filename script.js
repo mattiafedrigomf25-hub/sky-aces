@@ -1,5 +1,5 @@
-// --- COSTANTI DI CONFIGURAZIONE E VERSIONING ---
-const CURRENT_GAME_VERSION = "3.8";
+// --- COSTANTI DI CONFIGURAZIONE E VERSIONING (v3.9) ---
+const CURRENT_GAME_VERSION = "3.9";
 const BIN_ID = '6ac4b87cffd5d1605351f58d';
 const MASTER_KEY = '$2a$10$aplyk/beh6fEjv43q.yWK.yNbASVpWB2lHxQ8.O3c9aj0.zzW4Kuu';
 
@@ -12,6 +12,21 @@ if (localStorage.getItem('sky_ace_save_version') !== SAVE_DATA_VERSION) {
     localStorage.removeItem('sky_ace_unlocked');
     localStorage.removeItem('sky_ace_selected_id');
     localStorage.setItem('sky_ace_save_version', SAVE_DATA_VERSION);
+}
+
+// --- SISTEMA DI PROGRESSIONE DIFFICOLTÀ MONDI (v3.9) ---
+function getMundoDifficultyParameters(worldNum, subLevelNum) {
+    let baseSpeed = 3 + (worldNum - 1) * 0.5;
+    let spawnRate = Math.max(20, 40 - (worldNum * 3));
+    let enemySpeed = 2.5 + (worldNum - 1) * 0.4;
+    
+    if (subLevelNum === 2) {
+        baseSpeed += 0.5;
+        spawnRate = Math.max(18, spawnRate - 5);
+    } else if (subLevelNum === 3) {
+        baseSpeed += 0.8;
+    }
+    return { obstacleSpeed: baseSpeed, spawnRate: spawnRate, enemySpeed: enemySpeed };
 }
 
 // --- ELEMENTI PRINCIPALI E CANVAS ---
@@ -112,6 +127,28 @@ const updateActionBtn = document.getElementById('update-action-btn');
 const changelogList = document.getElementById('changelog-list');
 const changelogTitle = document.getElementById('changelog-title');
 const currentVersionLabel = document.getElementById('current-version-label');
+
+// --- GESTIONE TASTI CENTRALI MOBILE (PAUSA E RICOMINCIA) ---
+const mobilePauseBtn = document.getElementById('mobile-pause-btn');
+const mobileRestartBtn = document.getElementById('mobile-restart-btn');
+
+if (mobilePauseBtn) {
+    mobilePauseBtn.addEventListener('click', (e) => {
+        if (e && e.cancelable) e.preventDefault();
+        if (!gameStarted || isCountdownActive) return;
+        gamePaused = true;
+        if (pausePopup) pausePopup.classList.remove('hidden');
+    });
+}
+
+if (mobileRestartBtn) {
+    mobileRestartBtn.addEventListener('click', (e) => {
+        if (e && e.cancelable) e.preventDefault();
+        if (!gameStarted || isCountdownActive) return;
+        gamePaused = true;
+        if (restartConfirmPopup) restartConfirmPopup.classList.remove('hidden');
+    });
+}
 
 if (currentVersionLabel) currentVersionLabel.textContent = CURRENT_GAME_VERSION;
 
@@ -295,7 +332,7 @@ let shieldTimer = 0;
 let doublePointsActive = false;
 let doublePointsTimer = 0;
 let tripleShotActive = false;
-let tripleShotTimer = 0; 
+let tripleShotTimer = 0;
 
 let keys = { ArrowLeft: false, ArrowRight: false };
 
@@ -440,9 +477,11 @@ if (pauseBtn) {
 
 if (resumeBtn) {
     resumeBtn.addEventListener('click', () => {
-        gamePaused = false;
         if (pausePopup) pausePopup.classList.add('hidden');
-        updateGame();
+        runCountdown(() => {
+            gamePaused = false;
+            updateGame(); // Avvia il loop correttamente dopo il countdown di ripresa
+        });
     });
 }
 
@@ -706,8 +745,10 @@ function startGame() {
     if (recordDisplayEl) recordDisplayEl.textContent = highScore;
     updateLivesDisplay();
 
-    runCountdown(() => {});
-    updateGame();
+    // CORRETTO: Avvia il loop di gioco SOLO AL TERMINE del countdown iniziale!
+    runCountdown(() => {
+        updateGame();
+    });
 }
 
 if (startBtn) {
@@ -774,7 +815,7 @@ function draw() {
 
     ctx.save();
     ctx.translate(plane.x + plane.width / 2, plane.y + plane.height / 2);
-    ctx.rotate(0); 
+    ctx.rotate(-Math.PI / 4); 
     ctx.font = '36px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -867,29 +908,30 @@ function draw() {
 function updateGame() {
     if (!gameRunning) return;
     if (gamePaused || isCountdownActive) {
-        requestAnimationFrame(updateGame);
         return;
     }
 
     subLevelTimer++;
     
+    let diff = getMundoDifficultyParameters(currentWorld, currentSubLevel);
+
     if (!bossActive) {
         if (subLevelTimer < 900 && currentSubLevel === 1) {
-            gameSpeed = 3 + (currentWorld - 1) * 0.5 + Math.floor(subLevelTimer / 300) * 0.2;
-            spawnRate = Math.max(25, 40 - (currentWorld * 3));
+            gameSpeed = diff.obstacleSpeed + Math.floor(subLevelTimer / 300) * 0.2;
+            spawnRate = diff.spawnRate;
         } else if (currentSubLevel === 1 && subLevelTimer >= 900) {
             currentSubLevel = 2;
             subLevelTimer = 0;
             if (timerDisplayEl) timerDisplayEl.textContent = `Mondo ${currentWorld}-2`;
         } else if (subLevelTimer < 1100 && currentSubLevel === 2) {
-            gameSpeed = 3.8 + (currentWorld - 1) * 0.5;
-            spawnRate = Math.max(20, 32 - (currentWorld * 3));
+            gameSpeed = diff.obstacleSpeed + 0.3;
+            spawnRate = diff.spawnRate;
         } else if (currentSubLevel === 2 && subLevelTimer >= 1100) {
             currentSubLevel = 3;
             bossActive = true;
             boss.maxHealth = 50 + (currentWorld - 1) * 25;
             boss.health = boss.maxHealth;
-            boss.speed = 2.5 + (currentWorld - 1) * 0.4;
+            boss.speed = diff.obstacleSpeed * 0.7;
             boss.x = canvas.width / 2 - boss.width / 2;
             boss.y = 40;
             obstacles = [];
@@ -986,7 +1028,7 @@ function updateGame() {
                 if (boss.health <= 0) {
                     addParticles(boss.x + boss.width / 2, boss.y + boss.height / 2, '#69f0ae', 40);
                     bossActive = false;
-                    score += 300 * currentWorld; 
+                    score += 300 * currentWorld;
                     if (score > highScore) {
                         highScore = score;
                         if (recordDisplayEl) recordDisplayEl.textContent = highScore;
@@ -1126,7 +1168,7 @@ function updateGame() {
                     shieldTimer = 300;
                 } else if (obs.type === 'tripleShot') {
                     tripleShotActive = true;
-                    tripleShotTimer = 850; 
+                    tripleShotTimer = 850;
                 } else if (obs.type === 'double') {
                     doublePointsActive = true;
                     doublePointsTimer = 480;
