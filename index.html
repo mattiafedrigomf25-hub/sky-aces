@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sky Ace - Arcade Flight</title>
+    <title>Sky Ace - Campagna 10 Mondi</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1a0b4b">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -17,14 +17,14 @@
         
         <div class="score-board">
             <div>Punti: <strong id="current-score">0</strong></div>
-            <div id="timer-container">Tempo: <span id="timer-display">0s</span></div>
+            <div id="timer-container"><span id="timer-display">Mondo 1-1</span></div>
             <div style="display: flex; align-items: center; gap: 4px;">
                 <span id="record-container">Rec: <span id="record-display">0</span></span>
                 <span id="lives-display">❤❤❤</span>
             </div>
         </div>
         
-        <!-- Pulsanti In-Game Desktop (Visibili su PC, nascosti su mobile) -->
+        <!-- Pulsanti In-Game Desktop (Visibili solo su PC) -->
         <div id="in-game-buttons" class="pc-only-btn">
             <button id="pause-btn" style="background: #ff9800; font-size:12px; padding:5px 12px;">⏸️ Pausa</button>
             <button id="restart-prompt-btn" style="background: #e53935; font-size:12px; padding:5px 12px;">🔄 Ricomincia</button>
@@ -86,37 +86,36 @@
             <!-- 5. SCHERMATA DI AVVIO / MENU -->
             <div id="start-screen" class="hidden">
                 <h2>SKY ACE</h2>
-                <p>Schiva i fulmini, abbatti i caccia nemici e raccogli i bonus!</p>
-                <div class="plane-selection" style="display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 200px; align-items: center;">
-                    <button id="open-plane-modal-btn" style="background-color: #ab47bc; width: 100%;">Hangar Aerei ✈️</button>
-                    <button id="start-btn" style="background-color: #29b6f6; font-size: 16px; padding: 12px 24px; width: 100%;">AVVIA GIOCO 🚀</button>
+                <p style="font-size: 12px; margin-bottom: 12px;">Campagna a 10 Mondi: Supera gli obiettivi per avanzare!</p>
+                <div class="plane-selection" style="display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 220px; align-items: center;">
+                    <button id="open-plane-modal-btn" style="background-color: #ab47bc; width: 100%;">Seleziona Mondo & Aereo 🗺️</button>
+                    <button id="start-btn" style="background-color: #29b6f6; font-size: 16px; padding: 12px 24px; width: 100%;">INIZIA MISSIONE 🚀</button>
                     <button id="main-exit-btn" class="pc-only-btn" style="background-color: #d32f2f; font-size: 14px; padding: 10px 20px; width: 100%; margin-top: 5px;">Esci dal Gioco 🚪</button>
                 </div>
-                <p class="start-hint" style="margin-top: 12px;">Usa le frecce ⬅️ ➡️ della tastiera o i tasti laterali</p>
+                <p class="start-hint" style="margin-top: 12px;">Usa le frecce ⬅️ ➡️ o i tasti su schermo</p>
                 <div class="sync-info">☁️ Pilota: <span id="start-pilot-name" style="color:#ffd54f;">---</span></div>
-                <div class="version-info">v<span id="current-version-label">3.9</span></div>
+                <div class="version-info">v<span id="current-version-label">4.0</span></div>
             </div>
 
-            <!-- Modale Hangar -->
+            <!-- Modale Mappa Mondi & Hangar -->
             <div id="plane-modal" class="modal hidden">
                 <div class="modal-content" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
-                    <h2>HANGAR VELIVOLI</h2>
+                    <h2>SELEZIONE MONDI & VELIVOLI</h2>
                     <div id="plane-grid" class="plane-grid"></div>
                     
                     <div class="cloud-box">
-                        Profilo Cloud Pilota:<br>
-                        <strong id="display-pilot-id" style="color: #69f0ae;">---</strong>
-                        <button id="change-pilot-id-btn" style="padding: 2px 6px; font-size: 10px; margin-left: 5px; background: #718096;">Cambia Pilota 👤</button>
+                        Pilota Cloud: <strong id="display-pilot-id" style="color: #69f0ae;">---</strong>
+                        <button id="change-pilot-id-btn" style="padding: 2px 6px; font-size: 10px; margin-left: 5px; background: #718096;">Cambia 👤</button>
                     </div>
 
-                    <button id="close-plane-modal-btn" style="background-color: #512da8;">Chiudi Hangar</button>
+                    <button id="close-plane-modal-btn" style="background-color: #512da8;">Chiudi Mappa</button>
                 </div>
             </div>
 
             <!-- Pop-up Pausa -->
             <div id="pause-popup" class="hidden">
                 <h2>GIOCO IN PAUSA</h2>
-                <p>Il volo è in pausa.</p>
+                <p>Il volo è sospeso.</p>
                 <div class="popup-buttons">
                     <button id="resume-btn" style="background-color: #4caf50;">Riprendi</button>
                     <button id="pause-to-menu-btn" style="background-color: #512da8;">Torna al Menù</button>
@@ -126,7 +125,7 @@
             <!-- Pop-up Conferma Ricomincia -->
             <div id="restart-confirm-popup" class="hidden">
                 <h2>ATTENZIONE</h2>
-                <p>Vuoi davvero ricominciare la partita o tornare al menù?</p>
+                <p>Vuoi davvero ricominciare la missione corrente?</p>
                 <div class="popup-buttons">
                     <button id="confirm-restart-btn" style="background-color: #e53935;">Ricomincia la partita</button>
                     <button id="restart-to-menu-btn" style="background-color: #512da8;">Torna al menù</button>
@@ -136,8 +135,8 @@
 
             <!-- Schermata Game Over -->
             <div id="game-over-screen" class="hidden">
-                <h2>MISSIONE FALLITA</h2>
-                <p>Punteggio: <span id="final-score">0</span></p>
+                <h2 id="game-over-title">MISSIONE FALLITA</h2>
+                <p id="game-over-reason">Punteggio ottenuto: <span id="final-score">0</span></p>
                 <div id="save-score-section">
                     <input type="text" id="player-name" placeholder="Tuo Nome" maxlength="12">
                     <button id="save-btn">Salva</button>
