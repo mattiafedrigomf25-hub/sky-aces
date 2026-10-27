@@ -14,6 +14,15 @@ if (localStorage.getItem('sky_ace_save_version') !== SAVE_DATA_VERSION) {
     localStorage.setItem('sky_ace_save_version', SAVE_DATA_VERSION);
 }
 
+function isMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
+}
+
+// Applicazione forzata della classe condizionale sui dispositivi touch
+if (isMobileDevice()) {
+    document.body.classList.add('is-touch-device');
+}
+
 // --- SISTEMA DI PROGRESSIONE DIFFICOLTÀ MONDI (v3.9) ---
 function getMundoDifficultyParameters(worldNum, subLevelNum) {
     let baseSpeed = 3 + (worldNum - 1) * 0.5;
@@ -349,10 +358,6 @@ window.addEventListener('keyup', (e) => {
     if (e.key === 'ArrowLeft') keys.ArrowLeft = false;
     if (e.key === 'ArrowRight') keys.ArrowRight = false;
 });
-
-function isMobileDevice() {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
-}
 
 document.addEventListener('visibilitychange', () => {
     if (document.hidden && gameRunning && !gamePaused && !isCountdownActive) {
