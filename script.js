@@ -3,7 +3,6 @@ const CURRENT_GAME_VERSION = "3.9";
 const BIN_ID = '6ac4b87cffd5d1605351f58d';
 const MASTER_KEY = '$2a$10$aplyk/beh6fEjv43q.yWK.yNbASVpWB2lHxQ8.O3c9aj0.zzW4Kuu';
 
-// --- CONTROLLO VERSIONE SALVATAGGI (FORZATURA RESET PER TUTTI) ---
 const SAVE_DATA_VERSION = "reset_v4.0"; 
 
 if (localStorage.getItem('sky_ace_save_version') !== SAVE_DATA_VERSION) {
@@ -18,7 +17,6 @@ function isMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
 }
 
-// --- SISTEMA DI PROGRESSIONE DIFFICOLTÀ MONDI (v3.9) ---
 function getMundoDifficultyParameters(worldNum, subLevelNum) {
     let baseSpeed = 3 + (worldNum - 1) * 0.5;
     let spawnRate = Math.max(20, 40 - (worldNum * 3));
@@ -33,13 +31,47 @@ function getMundoDifficultyParameters(worldNum, subLevelNum) {
     return { obstacleSpeed: baseSpeed, spawnRate: spawnRate, enemySpeed: enemySpeed };
 }
 
-// --- ELEMENTI PRINCIPALI E CANVAS ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas ? canvas.getContext('2d') : null;
 const currentScoreEl = document.getElementById('current-score');
 const livesEl = document.getElementById('lives-display');
 
-// Schermate Principali
+const mainExitBtn = document.getElementById('main-exit-btn');
+const goodbyeScreen = document.getElementById('goodbye-screen');
+const goodbyeMessage = document.getElementById('goodbye-message');
+
+function triggerGameExit() {
+    gameRunning = false;
+    gameStarted = false;
+    gamePaused = false;
+    
+    updateMobileControlsVisibility(false);
+
+    if (startScreen) startScreen.classList.add('hidden');
+    if (pausePopup) pausePopup.classList.add('hidden');
+    if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
+    if (gameOverScreen) gameOverScreen.classList.add('hidden');
+    if (planeModal) planeModal.classList.add('hidden');
+    if (updatePopup) updatePopup.classList.add('hidden');
+    if (loginScreen) loginScreen.classList.add('hidden');
+    if (splashScreen) splashScreen.classList.add('hidden');
+    if (downloadScreen) downloadScreen.classList.add('hidden');
+
+    if (goodbyeMessage) {
+        goodbyeMessage.textContent = `Grazie per aver volato con noi, Comandante ${pilotId || 'Pilota'}! A presto. 👋`;
+    }
+
+    if (goodbyeScreen) goodbyeScreen.classList.remove('hidden');
+
+    try {
+        window.close();
+    } catch (e) {}
+}
+
+if (mainExitBtn) {
+    mainExitBtn.addEventListener('click', triggerGameExit);
+}
+
 const splashScreen = document.getElementById('splash-screen');
 const splashProgressBar = document.getElementById('splash-progress-bar');
 const splashProgressText = document.getElementById('splash-progress-text');
@@ -64,21 +96,20 @@ const menuBtn = document.getElementById('menu-btn');
 const leaderboardList = document.getElementById('leaderboard-list');
 const saveScoreSection = document.getElementById('save-score-section');
 
-// Elementi Countdown Overlay
 const countdownOverlay = document.getElementById('countdown-overlay');
 const countdownText = document.getElementById('countdown-text');
 
-// Elementi In-Game
+const pauseBtn = document.getElementById('pause-btn');
 const pausePopup = document.getElementById('pause-popup');
 const resumeBtn = document.getElementById('resume-btn');
 const pauseToMenuBtn = document.getElementById('pause-to-menu-btn');
 
+const restartPromptBtn = document.getElementById('restart-prompt-btn');
 const restartConfirmPopup = document.getElementById('restart-confirm-popup');
 const confirmRestartBtn = document.getElementById('confirm-restart-btn');
 const restartToMenuBtn = document.getElementById('restart-to-menu-btn');
 const cancelRestartBtn = document.getElementById('cancel-restart-btn');
 
-// Hangar e Update
 const openPlaneModalBtn = document.getElementById('open-plane-modal-btn');
 const closePlaneModalBtn = document.getElementById('close-plane-modal-btn');
 const planeModal = document.getElementById('plane-modal');
@@ -92,25 +123,8 @@ const changelogList = document.getElementById('changelog-list');
 const changelogTitle = document.getElementById('changelog-title');
 const currentVersionLabel = document.getElementById('current-version-label');
 
-// --- GESTIONE TASTI CENTRALI MOBILE (PAUSA E RICOMINCIA) ---
 const mobilePauseBtn = document.getElementById('mobile-pause-btn');
 const mobileRestartBtn = document.getElementById('mobile-restart-btn');
-
-// Rilevamento sicuro del dispositivo mobile
-function isMobileDevice() {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
-}
-
-// Se siamo da mobile, nascondi programmaticamente i tasti desktop in alto e il tasto esci
-document.addEventListener("DOMContentLoaded", () => {
-    if (isMobileDevice()) {
-        const desktopButtons = document.getElementById('in-game-buttons');
-        if (desktopButtons) desktopButtons.classList.add('force-hidden-mobile');
-
-        const mainExitBtn = document.getElementById('main-exit-btn');
-        if (mainExitBtn) mainExitBtn.classList.add('force-hidden-mobile');
-    }
-});
 
 if (mobilePauseBtn) {
     mobilePauseBtn.addEventListener('click', (e) => {
@@ -147,9 +161,7 @@ const PLANES_DATA = [
     { id: 9, emoji: '✈️', name: 'Aereo Acrobatico', points: 1800 }
 ];
 
-// --- GESTIONE PILOTA ED ISOLAMENTO LOCALE DEI PROGRESSI ---
 let pilotId = localStorage.getItem('sky_ace_pilot_name') || "";
-
 let totalLifetimeScore = parseInt(localStorage.getItem('sky_ace_total_score')) || 0;
 let highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
 let unlockedPlanes = JSON.parse(localStorage.getItem('sky_ace_unlocked')) || [0]; 
@@ -159,7 +171,6 @@ let timerDisplayEl = document.getElementById('timer-display');
 let recordDisplayEl = document.getElementById('record-display');
 if (recordDisplayEl) recordDisplayEl.textContent = highScore;
 
-// --- STATO CAMPAGNA A MONDI E SOTTOLIVELLI ---
 let currentWorld = 1;      
 let currentSubLevel = 1;   
 let bossActive = false;
@@ -176,7 +187,6 @@ let boss = {
     emoji: '🛸'
 };
 
-// --- SALVATAGGIO E CARICAMENTO PROGRESSI CLOUD ---
 function saveLocalProgress() {
     localStorage.setItem('sky_ace_total_score', totalLifetimeScore);
     localStorage.setItem('sky_ace_highscore', highScore);
@@ -439,6 +449,14 @@ if (savePilotBtn) {
     });
 }
 
+if (pauseBtn) {
+    pauseBtn.addEventListener('click', () => {
+        if (!gameStarted || isCountdownActive) return;
+        gamePaused = true;
+        if (pausePopup) pausePopup.classList.remove('hidden');
+    });
+}
+
 if (resumeBtn) {
     resumeBtn.addEventListener('click', () => {
         if (pausePopup) pausePopup.classList.add('hidden');
@@ -457,6 +475,14 @@ if (pauseToMenuBtn) {
         updateMobileControlsVisibility(false);
         if (pausePopup) pausePopup.classList.add('hidden');
         if (startScreen) startScreen.classList.remove('hidden');
+    });
+}
+
+if (restartPromptBtn) {
+    restartPromptBtn.addEventListener('click', () => {
+        if (!gameStarted || isCountdownActive) return;
+        gamePaused = true;
+        if (restartConfirmPopup) restartConfirmPopup.classList.remove('hidden');
     });
 }
 
