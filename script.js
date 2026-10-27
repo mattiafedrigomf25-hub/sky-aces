@@ -18,11 +18,6 @@ function isMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
 }
 
-// Applicazione forzata della classe condizionale sui dispositivi touch
-if (isMobileDevice()) {
-    document.body.classList.add('is-touch-device');
-}
-
 // --- SISTEMA DI PROGRESSIONE DIFFICOLTÀ MONDI (v3.9) ---
 function getMundoDifficultyParameters(worldNum, subLevelNum) {
     let baseSpeed = 3 + (worldNum - 1) * 0.5;
@@ -43,43 +38,6 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas ? canvas.getContext('2d') : null;
 const currentScoreEl = document.getElementById('current-score');
 const livesEl = document.getElementById('lives-display');
-
-// --- ELEMENTI SCHERMATA DI USCITA / ARRIVEDERCI ---
-const mainExitBtn = document.getElementById('main-exit-btn');
-const goodbyeScreen = document.getElementById('goodbye-screen');
-const goodbyeMessage = document.getElementById('goodbye-message');
-
-function triggerGameExit() {
-    gameRunning = false;
-    gameStarted = false;
-    gamePaused = false;
-    
-    updateMobileControlsVisibility(false);
-
-    if (startScreen) startScreen.classList.add('hidden');
-    if (pausePopup) pausePopup.classList.add('hidden');
-    if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
-    if (gameOverScreen) gameOverScreen.classList.add('hidden');
-    if (planeModal) planeModal.classList.add('hidden');
-    if (updatePopup) updatePopup.classList.add('hidden');
-    if (loginScreen) loginScreen.classList.add('hidden');
-    if (splashScreen) splashScreen.classList.add('hidden');
-    if (downloadScreen) downloadScreen.classList.add('hidden');
-
-    if (goodbyeMessage) {
-        goodbyeMessage.textContent = `Grazie per aver volato con noi, Comandante ${pilotId || 'Pilota'}! A presto. 👋`;
-    }
-
-    if (goodbyeScreen) goodbyeScreen.classList.remove('hidden');
-
-    try {
-        window.close();
-    } catch (e) {}
-}
-
-if (mainExitBtn) {
-    mainExitBtn.addEventListener('click', triggerGameExit);
-}
 
 // Schermate Principali
 const splashScreen = document.getElementById('splash-screen');
@@ -111,13 +69,10 @@ const countdownOverlay = document.getElementById('countdown-overlay');
 const countdownText = document.getElementById('countdown-text');
 
 // Elementi In-Game
-const inGameButtons = document.getElementById('in-game-buttons');
-const pauseBtn = document.getElementById('pause-btn');
 const pausePopup = document.getElementById('pause-popup');
 const resumeBtn = document.getElementById('resume-btn');
 const pauseToMenuBtn = document.getElementById('pause-to-menu-btn');
 
-const restartPromptBtn = document.getElementById('restart-prompt-btn');
 const restartConfirmPopup = document.getElementById('restart-confirm-popup');
 const confirmRestartBtn = document.getElementById('confirm-restart-btn');
 const restartToMenuBtn = document.getElementById('restart-to-menu-btn');
@@ -160,10 +115,6 @@ if (mobileRestartBtn) {
 }
 
 if (currentVersionLabel) currentVersionLabel.textContent = CURRENT_GAME_VERSION;
-
-if (inGameButtons) {
-    inGameButtons.style.display = 'flex';
-}
 
 let onlineVersionToInstall = null;
 
@@ -472,14 +423,6 @@ if (savePilotBtn) {
     });
 }
 
-if (pauseBtn) {
-    pauseBtn.addEventListener('click', () => {
-        if (!gameStarted || isCountdownActive) return;
-        gamePaused = true;
-        if (pausePopup) pausePopup.classList.remove('hidden');
-    });
-}
-
 if (resumeBtn) {
     resumeBtn.addEventListener('click', () => {
         if (pausePopup) pausePopup.classList.add('hidden');
@@ -498,14 +441,6 @@ if (pauseToMenuBtn) {
         updateMobileControlsVisibility(false);
         if (pausePopup) pausePopup.classList.add('hidden');
         if (startScreen) startScreen.classList.remove('hidden');
-    });
-}
-
-if (restartPromptBtn) {
-    restartPromptBtn.addEventListener('click', () => {
-        if (!gameStarted || isCountdownActive) return;
-        gamePaused = true;
-        if (restartConfirmPopup) restartConfirmPopup.classList.remove('hidden');
     });
 }
 
