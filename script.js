@@ -480,7 +480,7 @@ if (resumeBtn) {
         if (pausePopup) pausePopup.classList.add('hidden');
         runCountdown(() => {
             gamePaused = false;
-            updateGame(); // Avvia il loop correttamente dopo il countdown di ripresa
+            updateGame();
         });
     });
 }
@@ -745,7 +745,6 @@ function startGame() {
     if (recordDisplayEl) recordDisplayEl.textContent = highScore;
     updateLivesDisplay();
 
-    // CORRETTO: Avvia il loop di gioco SOLO AL TERMINE del countdown iniziale!
     runCountdown(() => {
         updateGame();
     });
