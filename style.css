@@ -454,3 +454,7 @@ body.is-touch-device .desktop-only,
         display: none !important;
     }
 }
+/* Classe per nascondere i tasti desktop via JavaScript su mobile */
+.force-hidden-mobile {
+    display: none !important;
+}
