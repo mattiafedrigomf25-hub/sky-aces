@@ -3,7 +3,7 @@ const CURRENT_GAME_VERSION = "4.0";
 const BIN_ID = '6ac4b87cffd5d1605351f58d';
 const MASTER_KEY = '$2a$10$aplyk/beh6fEjv43q.yWK.yNbASVpWB2lHxQ8.O3c9aj0.zzW4Kuu';
 
-const SAVE_DATA_VERSION = "reset_v4.0"; 
+const SAVE_DATA_VERSION = "reset_v4.1_absolute";
 
 // Pulizia profonda locale dei vecchi record
 if (localStorage.getItem('sky_ace_save_version') !== SAVE_DATA_VERSION) {
