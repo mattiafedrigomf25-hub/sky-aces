@@ -255,19 +255,19 @@ document.addEventListener('visibilitychange', () => {
 async function runInitialLoading() {
     let progress = 0;
     let interval = setInterval(() => {
-        progress += Math.floor(Math.random() * 15) + 10;
+        progress += Math.floor(Math.random() * 20) + 15;
         if (progress >= 100) {
             progress = 100;
             clearInterval(interval);
-            setTimeout(async () => {
+            setTimeout(() => {
                 if (splashScreen) splashScreen.classList.add('hidden');
-                let hasUpdate = await checkForUpdates();
-                if (!hasUpdate) proceedToGameOrLogin();
+                // Avvia direttamente il login o il menu principale senza blocchi di rete
+                proceedToGameOrLogin();
             }, 200);
         }
         if (splashProgressBar) splashProgressBar.style.width = progress + '%';
         if (splashProgressText) splashProgressText.textContent = progress + '%';
-    }, 50);
+    }, 40);
 }
 
 async function proceedToGameOrLogin() {
