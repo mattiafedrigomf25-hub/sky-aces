@@ -1009,14 +1009,19 @@ if (menuBtn) {
 // --- CONTROLLO AGGIORNAMENTI & POP-UP CHANGELOG CLOUD ---
 async function checkForGameUpdates() {
     try {
+        console.log("Controllo aggiornamenti in corso...");
         let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
             headers: { 'X-Master-Key': MASTER_KEY }
         });
         let data = await response.json();
+        console.log("Dati ricevuti dal Cloud:", data);
+        
         let record = data.record || {};
         let cloudVersion = record.latestVersion || "4.1";
+        console.log(`Versione Cloud: ${cloudVersion} | Versione Locale: ${CURRENT_GAME_VERSION}`);
 
         if (cloudVersion !== CURRENT_GAME_VERSION) {
+            console.log("Versione differente rilevata! Apro il pop-up...");
             onlineVersionToInstall = cloudVersion;
             if (changelogTitle) changelogTitle.textContent = `Aggiornamento Disponibile: v${cloudVersion}`;
             
@@ -1029,18 +1034,18 @@ async function checkForGameUpdates() {
                 });
             }
 
-            if (updatePopup) updatePopup.classList.remove('hidden');
+            if (updatePopup) {
+                updatePopup.classList.remove('hidden');
+                console.log("Classe 'hidden' rimossa dal pop-up di aggiornamento!");
+            } else {
+                console.error("ERRORE: L'elemento updatePopup non esiste o non è stato trovato nel DOM!");
+            }
+        } else {
+            console.log("Le versioni coincidono. Nessun aggiornamento necessario.");
         }
     } catch (error) {
-        console.error("Errore controllo aggiornamenti:", error);
+        console.error("Errore critico nel controllo aggiornamenti:", error);
     }
-}
-
-if (updateActionBtn) {
-    updateActionBtn.addEventListener('click', () => {
-        if (updatePopup) updatePopup.classList.add('hidden');
-        window.location.reload();
-    });
 }
 
 draw();
