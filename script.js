@@ -1,5 +1,5 @@
 // --- CONFIGURAZIONE & RESET FORZATO v4.1 ---
-const CURRENT_GAME_VERSION = "4.1";
+const CURRENT_GAME_VERSION = "4.2";
 const BIN_ID = '6ac4b87cffd5d1605351f58d';
 const MASTER_KEY = '$2a$10$aplyk/beh6fEjv43q.yWK.yNbASVpWB2lHxQ8.O3c9aj0.zzW4Kuu';
 
