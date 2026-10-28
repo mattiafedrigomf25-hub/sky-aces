@@ -1,5 +1,5 @@
 // --- CONFIGURAZIONE & RESET FORZATO v4.1 ---
-const CURRENT_GAME_VERSION = "4.2";
+const CURRENT_GAME_VERSION = "4.3";
 const BIN_ID = '6ac4b87cffd5d1605351f58d';
 const MASTER_KEY = '$2a$10$aplyk/beh6fEjv43q.yWK.yNbASVpWB2lHxQ8.O3c9aj0.zzW4Kuu';
 
@@ -1006,11 +1006,9 @@ if (menuBtn) {
     });
 }
 
-// --- CONTROLLO AGGIORNAMENTI & POP-UP CHANGELOG CLOUD (ANTI-CACHE) ---
+// --- CONTROLLO AGGIORNAMENTI & POP-UP CHANGELOG CLOUD (CORRETTO) ---
 async function checkForGameUpdates() {
     try {
-        console.log("Controllo aggiornamenti freschi dal cloud...");
-        // Aggiungiamo "_t=" seguito dal tempo corrente per bloccare la cache di GitHub/Cloudflare
         let antiCacheUrl = `https://api.jsonbin.io/v3/b/${BIN_ID}/latest?_t=${new Date().getTime()}`;
         
         let response = await fetch(antiCacheUrl, {
@@ -1019,10 +1017,13 @@ async function checkForGameUpdates() {
         let data = await response.json();
         
         let record = data.record || {};
-        let cloudVersion = record.latestVersion || "4.2";
-        console.log(`Versione Cloud: ${cloudVersion} | Versione Locale: ${CURRENT_GAME_VERSION}`);
+        let cloudVersion = record.latestVersion || "4.1";
+        
+        // Controlliamo qual è l'ultima versione che l'utente ha già visto/aggiornato
+        let lastSeenVersion = localStorage.getItem('sky_ace_acknowledged_version') || "4.1";
 
-        if (cloudVersion !== CURRENT_GAME_VERSION) {
+        // Il pop-up compare SOLO se il cloud ha una versione PIÙ RECENTE di quella che l'utente ha già aggiornato
+        if (cloudVersion !== CURRENT_GAME_VERSION && cloudVersion !== lastSeenVersion) {
             onlineVersionToInstall = cloudVersion;
             if (changelogTitle) changelogTitle.textContent = `Aggiornamento Disponibile: v${cloudVersion}`;
             
@@ -1046,7 +1047,12 @@ if (updateActionBtn) {
     updateActionBtn.addEventListener('click', () => {
         if (updatePopup) updatePopup.classList.add('hidden');
         
-        // Forza la pulizia della cache mobile ricaricando con un parametro random
+        // Memorizziamo che l'utente ha aggiornato all'ultima versione del cloud
+        if (onlineVersionToInstall) {
+            localStorage.setItem('sky_ace_acknowledged_version', onlineVersionToInstall);
+        }
+        
+        // Ricarica la pagina per applicare le modifiche pulite
         window.location.href = window.location.pathname + '?update=' + new Date().getTime();
     });
 }
