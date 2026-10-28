@@ -1006,22 +1006,23 @@ if (menuBtn) {
     });
 }
 
-// --- CONTROLLO AGGIORNAMENTI & POP-UP CHANGELOG CLOUD ---
+// --- CONTROLLO AGGIORNAMENTI & POP-UP CHANGELOG CLOUD (ANTI-CACHE) ---
 async function checkForGameUpdates() {
     try {
-        console.log("Controllo aggiornamenti in corso...");
-        let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+        console.log("Controllo aggiornamenti freschi dal cloud...");
+        // Aggiungiamo "_t=" seguito dal tempo corrente per bloccare la cache di GitHub/Cloudflare
+        let antiCacheUrl = `https://api.jsonbin.io/v3/b/${BIN_ID}/latest?_t=${new Date().getTime()}`;
+        
+        let response = await fetch(antiCacheUrl, {
             headers: { 'X-Master-Key': MASTER_KEY }
         });
         let data = await response.json();
-        console.log("Dati ricevuti dal Cloud:", data);
         
         let record = data.record || {};
         let cloudVersion = record.latestVersion || "4.2";
         console.log(`Versione Cloud: ${cloudVersion} | Versione Locale: ${CURRENT_GAME_VERSION}`);
 
         if (cloudVersion !== CURRENT_GAME_VERSION) {
-            console.log("Versione differente rilevata! Apro il pop-up...");
             onlineVersionToInstall = cloudVersion;
             if (changelogTitle) changelogTitle.textContent = `Aggiornamento Disponibile: v${cloudVersion}`;
             
@@ -1034,19 +1035,20 @@ async function checkForGameUpdates() {
                 });
             }
 
-            if (updatePopup) {
-                updatePopup.classList.remove('hidden');
-                console.log("Classe 'hidden' rimossa dal pop-up di aggiornamento!");
-            } else {
-                console.error("ERRORE: L'elemento updatePopup non esiste o non è stato trovato nel DOM!");
-            }
-        } else {
-            console.log("Le versioni coincidono. Nessun aggiornamento necessario.");
+            if (updatePopup) updatePopup.classList.remove('hidden');
         }
     } catch (error) {
-        console.error("Errore critico nel controllo aggiornamenti:", error);
+        console.error("Errore controllo aggiornamenti:", error);
     }
 }
 
+if (updateActionBtn) {
+    updateActionBtn.addEventListener('click', () => {
+        if (updatePopup) updatePopup.classList.add('hidden');
+        
+        // Forza la pulizia della cache mobile ricaricando con un parametro random
+        window.location.href = window.location.pathname + '?update=' + new Date().getTime();
+    });
+}
 draw();
 runInitialLoading();
