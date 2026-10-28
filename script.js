@@ -5,7 +5,7 @@ const MASTER_KEY = '$2a$10$aplyk/beh6fEjv43q.yWK.yNbASVpWB2lHxQ8.O3c9aj0.zzW4Kuu
 
 const SAVE_DATA_VERSION = "reset_v4.0"; 
 
-// Controlla se il dispositivo ha ancora i vecchi dati e puliscili a fondo
+// Pulizia profonda locale dei vecchi record
 if (localStorage.getItem('sky_ace_save_version') !== SAVE_DATA_VERSION) {
     localStorage.removeItem('sky_ace_total_score');
     localStorage.removeItem('sky_ace_highscore');
@@ -16,18 +16,11 @@ if (localStorage.getItem('sky_ace_save_version') !== SAVE_DATA_VERSION) {
     localStorage.setItem('sky_ace_save_version', SAVE_DATA_VERSION);
 }
 
-// FORZATURA EXTRA: Azzera la variabile in memoria se legge un vecchio record residuo
-let highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
-if (highScore > 0 && localStorage.getItem('sky_ace_save_version') === "reset_v4.0") {
-    highScore = 0;
-    localStorage.setItem('sky_ace_highscore', '0');
-}
-
 function isMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
 }
 
-// --- DEFINIZIONE STRUTTURATA DEI 10 MONDI E DEGLI AEREI ASSOCIATI ---
+// --- DEFINIZIONE STRUTTURATA DEI 10 MONDI E DEI VELIVOLI ---
 const WORLDS_DATA = [
     { world: 1, name: "Training Skies", emoji: "✈️", planeName: "Aereo Standard", targetScore: 120, speed: 6, lives: 3, perk: "Bilanciato", shootType: "single" },
     { world: 2, name: "Storm Valley", emoji: "🛩️", planeName: "Caccia Agile", targetScore: 250, speed: 8, lives: 2, perk: "Velocità +33% / Vita -1", shootType: "single" },
@@ -42,29 +35,9 @@ const WORLDS_DATA = [
 ];
 
 let pilotId = localStorage.getItem('sky_ace_pilot_name') || "";
-let highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
+let highScore = 0; // Inizializzato pulito a 0 per il reset
 let maxWorldReached = parseInt(localStorage.getItem('sky_ace_max_world')) || 1;
 let selectedWorldIndex = 0;
-
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas ? canvas.getContext('2d') : null;
-const currentScoreEl = document.getElementById('current-score');
-const livesEl = document.getElementById('lives-display');
-const timerDisplayEl = document.getElementById('timer-display');
-const recordDisplayEl = document.getElementById('record-display');
-
-const mainExitBtn = document.getElementById('main-exit-btn');
-const goodbyeScreen = document.getElementById('goodbye-screen');
-const goodbyeMessage = document.getElementById('goodbye-message');
-
-function triggerGameExit() {
-    gameRunning = false; gameStarted = false; gamePaused = false;
-    updateMobileControlsVisibility(false);
-    if (startScreen) startScreen.classList.add('hidden');
-    if (goodbyeMessage) goodbyeMessage.textContent = `Grazie per aver volato con noi, Comandante ${pilotId || 'Pilota'}! A presto. 👋`;
-    if (goodbyeScreen) goodbyeScreen.classList.remove('hidden');
-    try { window.close(); } catch (e) {}
-}
 
 if (mainExitBtn) mainExitBtn.addEventListener('click', triggerGameExit);
 
