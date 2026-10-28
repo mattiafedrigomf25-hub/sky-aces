@@ -22,16 +22,16 @@ function isMobileDevice() {
 
 // --- DEFINIZIONE STRUTTURATA DEI 10 MONDI E DEI VELIVOLI (BILANCIATA SU 90s) ---
 const WORLDS_DATA = [
-    { world: 1, name: "Training Skies", emoji: "✈️", planeName: "Aereo Standard", targetScore: 120, speed: 6, lives: 3, perk: "Bilanciato", shootType: "single" },
-    { world: 2, name: "Storm Valley", emoji: "✈️", planeName: "Caccia Agile", targetScore: 200, speed: 8, lives: 2, perk: "Velocità +33% / Vita -1", shootType: "single" },
-    { world: 3, name: "Neon City", emoji: "✈️", planeName: "Doppio Cannone", targetScore: 300, speed: 6.5, lives: 3, perk: "Doppio Sparo di Base", shootType: "double" },
-    { world: 4, name: "Canyon Run", emoji: "✈️", planeName: "Girocottero", targetScore: 420, speed: 7, lives: 4, perk: "Scudo +1 Vita Extra", shootType: "single" },
-    { world: 5, name: "Asteroid Field", emoji: "✈️", planeName: "Interceptor", targetScore: 560, speed: 6.5, lives: 3, perk: "Triplo Sparo Nativo", shootType: "triple" },
-    { world: 6, name: "Volcano Alley", emoji: "✈️", planeName: "Stealth Jet", targetScore: 720, speed: 7.5, lives: 3, perk: "Magnete Bonus integrato", shootType: "double" },
-    { world: 7, name: "Frozen Peaks", emoji: "✈️", planeName: "Thunderbolt", targetScore: 900, speed: 8.5, lives: 3, perk: "Ricarica Fuoco Rapido", shootType: "triple" },
-    { world: 8, name: "Orbital Station", emoji: "✈️", planeName: "Dreadnought", targetScore: 1100, speed: 5.5, lives: 5, perk: "Corazzato 5 Vite Base", shootType: "double" },
-    { world: 9, name: "Deep Nebula", emoji: "✈️", planeName: "Aero-Phantasm", targetScore: 1300, speed: 8, lives: 4, perk: "Sparo Quadruplo", shootType: "quad" },
-    { world: 10, name: "Core Final Bastion", emoji: "✈️", planeName: "Sky Ace Supreme", targetScore: 1500, speed: 9, lives: 5, perk: "Potenza e Agilità Massima", shootType: "quad" }
+    { world: 1, name: "Training Skies", emoji: "✈️", planeName: "Aereo Standard", targetScore: 250, speed: 6, lives: 3, perk: "Bilanciato", shootType: "single" },
+    { world: 2, name: "Storm Valley", emoji: "✈️", planeName: "Caccia Agile", targetScore: 450, speed: 8, lives: 2, perk: "Velocità +33% / Vita -1", shootType: "single" },
+    { world: 3, name: "Neon City", emoji: "✈️", planeName: "Doppio Cannone", targetScore: 700, speed: 6.5, lives: 3, perk: "Doppio Sparo di Base", shootType: "double" },
+    { world: 4, name: "Canyon Run", emoji: "✈️", planeName: "Girocottero", targetScore: 1000, speed: 7, lives: 4, perk: "Scudo +1 Vita Extra", shootType: "single" },
+    { world: 5, name: "Asteroid Field", emoji: "✈️", planeName: "Interceptor", targetScore: 1350, speed: 6.5, lives: 3, perk: "Triplo Sparo Nativo", shootType: "triple" },
+    { world: 6, name: "Volcano Alley", emoji: "✈️", planeName: "Stealth Jet", targetScore: 1750, speed: 7.5, lives: 3, perk: "Magnete Bonus integrato", shootType: "double" },
+    { world: 7, name: "Frozen Peaks", emoji: "✈️", planeName: "Thunderbolt", targetScore: 2200, speed: 8.5, lives: 3, perk: "Ricarica Fuoco Rapido", shootType: "triple" },
+    { world: 8, name: "Orbital Station", emoji: "✈️", planeName: "Dreadnought", targetScore: 2700, speed: 5.5, lives: 5, perk: "Corazzato 5 Vite Base", shootType: "double" },
+    { world: 9, name: "Deep Nebula", emoji: "✈️", planeName: "Aero-Phantasm", targetScore: 3300, speed: 8, lives: 4, perk: "Sparo Quadruplo", shootType: "quad" },
+    { world: 10, name: "Core Final Bastion", emoji: "✈️", planeName: "Sky Ace Supreme", targetScore: 4000, speed: 9, lives: 5, perk: "Potenza e Agilità Massima", shootType: "quad" }
 ];
 
 let pilotId = localStorage.getItem('sky_ace_pilot_name') || "";
@@ -679,10 +679,10 @@ function updateGame() {
     subLevelTimer++;
 
     if (!bossActive) {
-        if (subLevelTimer >= 800 && currentSubLevel === 1) {
+        if (subLevelTimer >= 2200 && currentSubLevel === 1) {
             currentSubLevel = 2; subLevelTimer = 0;
             if (timerDisplayEl) timerDisplayEl.textContent = `Mondo ${activeConfig.world}-2`;
-        } else if (subLevelTimer >= 950 && currentSubLevel === 2) {
+        } else if (subLevelTimer >= 4500 && currentSubLevel === 2) {
             currentSubLevel = 3;
             bossActive = true;
             boss.x = canvas.width / 2 - boss.width / 2;
