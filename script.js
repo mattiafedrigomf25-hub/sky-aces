@@ -1017,7 +1017,7 @@ async function checkForGameUpdates() {
         console.log("Dati ricevuti dal Cloud:", data);
         
         let record = data.record || {};
-        let cloudVersion = record.latestVersion || "4.1";
+        let cloudVersion = record.latestVersion || "4.2";
         console.log(`Versione Cloud: ${cloudVersion} | Versione Locale: ${CURRENT_GAME_VERSION}`);
 
         if (cloudVersion !== CURRENT_GAME_VERSION) {
