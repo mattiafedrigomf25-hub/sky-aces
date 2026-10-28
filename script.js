@@ -1049,7 +1049,7 @@ function executeGameUpdate(e) {
     if (onlineVersionToInstall) {
         localStorage.setItem('sky_ace_acknowledged_version', onlineVersionToInstall);
     } else {
-        localStorage.setItem('sky_ace_acknowledged_version', '4.3');
+        localStorage.setItem('sky_ace_acknowledged_version', '4.4');
     }
 
     // 2. Nascondi subito il pop-up a schermo
