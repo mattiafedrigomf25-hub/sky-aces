@@ -253,21 +253,32 @@ document.addEventListener('visibilitychange', () => {
 });
 
 async function runInitialLoading() {
-    let progress = 0;
-    let interval = setInterval(() => {
-        progress += Math.floor(Math.random() * 20) + 15;
-        if (progress >= 100) {
-            progress = 100;
-            clearInterval(interval);
-            setTimeout(() => {
-                if (splashScreen) splashScreen.classList.add('hidden');
-                // Avvia direttamente il login o il menu principale senza blocchi di rete
-                proceedToGameOrLogin();
-            }, 200);
-        }
-        if (splashProgressBar) splashProgressBar.style.width = progress + '%';
-        if (splashProgressText) splashProgressText.textContent = progress + '%';
-    }, 40);
+    console.log("Avvio caricamento iniziale...");
+    try {
+        let splash = document.getElementById('splash-screen') || splashScreen;
+        let bar = document.getElementById('splash-progress-bar') || splashProgressBar;
+        let text = document.getElementById('splash-progress-text') || splashProgressText;
+        
+        let progress = 0;
+        let interval = setInterval(() => {
+            progress += 25;
+            if (bar) bar.style.width = progress + '%';
+            if (text) text.textContent = progress + '%';
+            
+            if (progress >= 100) {
+                clearInterval(interval);
+                setTimeout(() => {
+                    if (splash) splash.classList.add('hidden');
+                    proceedToGameOrLogin();
+                }, 200);
+            }
+        }, 50);
+    } catch (e) {
+        console.error("Errore critico nel loading, forzo l'apertura:", e);
+        let splash = document.getElementById('splash-screen');
+        if (splash) splash.classList.add('hidden');
+        proceedToGameOrLogin();
+    }
 }
 
 async function proceedToGameOrLogin() {
