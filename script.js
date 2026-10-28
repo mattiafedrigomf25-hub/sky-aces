@@ -39,6 +39,13 @@ let highScore = 0;
 let maxWorldReached = parseInt(localStorage.getItem('sky_ace_max_world')) || 1;
 let selectedWorldIndex = 0;
 
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas ? canvas.getContext('2d') : null;
+const currentScoreEl = document.getElementById('current-score');
+const livesEl = document.getElementById('lives-display');
+const timerDisplayEl = document.getElementById('timer-display');
+const recordDisplayEl = document.getElementById('record-display');
+
 const splashScreen = document.getElementById('splash-screen');
 const splashProgressBar = document.getElementById('splash-progress-bar');
 const splashProgressText = document.getElementById('splash-progress-text');
@@ -99,7 +106,6 @@ const mainExitBtn = document.getElementById('main-exit-btn');
 const goodbyeScreen = document.getElementById('goodbye-screen');
 const goodbyeMessage = document.getElementById('goodbye-message');
 
-// Dichiarazione preventiva della funzione per evitare blocchi
 function triggerGameExit() {
     gameRunning = false; gameStarted = false; gamePaused = false;
     updateMobileControlsVisibility(false);
@@ -266,7 +272,6 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
-// Funzione di caricamento iniziale sicura (senza blocchi di rete infiniti)
 async function runInitialLoading() {
     let progress = 0;
     let interval = setInterval(() => {
@@ -293,6 +298,262 @@ async function proceedToGameOrLogin() {
         if (startScreen) startScreen.classList.remove('hidden');
     }
 }
+
+if (savePilotBtn) {
+    savePilotBtn.addEventListener('click', async () => {
+        let name = loginPilotInput ? loginPilotInput.value.trim() : "";
+        if (!name) return alert("Inserisci un Nome Pilota valido!");
+        pilotId = name;
+        localStorage.setItem('sky_ace_pilot_name', pilotId);
+        if (startPilotName) startPilotName.textContent = pilotId;
+        if (playerNameInput) playerNameInput.value = pilotId;
+        
+        savePilotBtn.disabled = true;
+        await loadProgressFromCloud();
+        savePilotBtn.disabled = false;
+        
+        if (loginScreen) loginScreen.classList.add('hidden');
+        if (startScreen) startScreen.classList.remove('hidden');
+    });
+}
+
+if (pauseBtn) {
+    pauseBtn.addEventListener('click', () => {
+        if (!gameStarted || isCountdownActive) return;
+        gamePaused = true;
+        if (pausePopup) pausePopup.classList.remove('hidden');
+    });
+}
+
+if (resumeBtn) {
+    resumeBtn.addEventListener('click', () => {
+        if (pausePopup) pausePopup.classList.add('hidden');
+        runCountdown(() => { gamePaused = false; updateGame(); });
+    });
+}
+
+if (pauseToMenuBtn) {
+    pauseToMenuBtn.addEventListener('click', () => {
+        gamePaused = false; gameRunning = false; gameStarted = false;
+        updateMobileControlsVisibility(false);
+        if (pausePopup) pausePopup.classList.add('hidden');
+        if (startScreen) startScreen.classList.remove('hidden');
+    });
+}
+
+if (restartPromptBtn) {
+    restartPromptBtn.addEventListener('click', () => {
+        if (!gameStarted || isCountdownActive) return;
+        gamePaused = true;
+        if (restartConfirmPopup) restartConfirmPopup.classList.remove('hidden');
+    });
+}
+
+if (cancelRestartBtn) {
+    cancelRestartBtn.addEventListener('click', () => {
+        gamePaused = false;
+        if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
+        if (gameRunning) updateGame();
+    });
+}
+
+if (confirmRestartBtn) {
+    confirmRestartBtn.addEventListener('click', () => {
+        gamePaused = false;
+        if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
+        if (gameOverScreen) gameOverScreen.classList.add('hidden');
+        startGame();
+    });
+}
+
+if (restartToMenuBtn) {
+    restartToMenuBtn.addEventListener('click', () => {
+        gamePaused = false; gameRunning = false; gameStarted = false;
+        updateMobileControlsVisibility(false);
+        if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
+        if (gameOverScreen) gameOverScreen.classList.add('hidden');
+        if (startScreen) startScreen.classList.remove('hidden');
+    });
+}
+
+const mobileControls = document.getElementById('mobile-controls');
+const leftBtn = document.getElementById('left-btn');
+const rightBtn = document.getElementById('right-btn');
+
+function updateMobileControlsVisibility(show) {
+    if (!mobileControls) return;
+    if (!isMobileDevice()) {
+        mobileControls.classList.remove('in-game-active');
+        return;
+    }
+    if (show) mobileControls.classList.add('in-game-active');
+    else mobileControls.classList.remove('in-game-active');
+}
+
+function setupInstantButton(btn, keyProp) {
+    if (!btn) return;
+    const startAction = (e) => { if (e && e.cancelable) e.preventDefault(); keys[keyProp] = true; };
+    const stopAction = (e) => { if (e && e.cancelable) e.preventDefault(); keys[keyProp] = false; };
+    btn.addEventListener('touchstart', startAction, { passive: false });
+    btn.addEventListener('touchend', stopAction, { passive: false });
+    btn.addEventListener('touchcancel', stopAction, { passive: false });
+    btn.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch') startAction(e); }, { passive: false });
+    btn.addEventListener('pointerup', (e) => { if (e.pointerType !== 'touch') stopAction(e); }, { passive: false });
+}
+
+setupInstantButton(leftBtn, 'ArrowLeft');
+setupInstantButton(rightBtn, 'ArrowRight');
+
+function renderPlaneGrid() {
+    if (!planeGrid) return;
+    planeGrid.innerHTML = '';
+    
+    WORLDS_DATA.forEach((wData, idx) => {
+        let slot = document.createElement('div');
+        let isUnlocked = wData.world <= maxWorldReached;
+        let isSelected = selectedWorldIndex === idx;
+
+        slot.className = 'plane-slot';
+        if (isUnlocked) {
+            slot.classList.add('unlocked');
+            if (isSelected) slot.classList.add('selected');
+            slot.innerHTML = `
+                <div class="plane-emoji">${wData.emoji}</div>
+                <div class="plane-info">
+                    <strong>Mondo ${wData.world}</strong><br>
+                    ${wData.planeName}<br>
+                    <span style="color:#69f0ae;">Req: ${wData.targetScore} pt</span>
+                </div>
+            `;
+            slot.onclick = () => {
+                selectedWorldIndex = idx;
+                renderPlaneGrid();
+            };
+        } else {
+            slot.classList.add('locked');
+            slot.innerHTML = `
+                <div class="plane-emoji">🔒</div>
+                <div class="plane-info">
+                    Mondo ${wData.world}<br>
+                    <span style="color:#e53935;">Completa Mondo ${wData.world - 1}</span>
+                </div>
+            `;
+        }
+        planeGrid.appendChild(slot);
+    });
+}
+
+if (openPlaneModalBtn) {
+    openPlaneModalBtn.onclick = async () => {
+        await loadProgressFromCloud();
+        if (displayPilotId) displayPilotId.textContent = pilotId;
+        renderPlaneGrid();
+        if (planeModal) planeModal.classList.remove('hidden');
+    };
+}
+
+if (changePilotIdBtn) {
+    changePilotIdBtn.onclick = async () => {
+        let newName = prompt("Inserisci il tuo Nome Pilota:", pilotId);
+        if (newName && newName.trim() !== "") {
+            pilotId = newName.trim();
+            localStorage.setItem('sky_ace_pilot_name', pilotId);
+            if (displayPilotId) displayPilotId.textContent = pilotId;
+            if (startPilotName) startPilotName.textContent = pilotId;
+            if (playerNameInput) playerNameInput.value = pilotId;
+            await loadProgressFromCloud();
+            renderPlaneGrid();
+        }
+    };
+}
+
+if (closePlaneModalBtn) {
+    closePlaneModalBtn.onclick = () => {
+        if (planeModal) planeModal.classList.add('hidden');
+    };
+}
+
+function runCountdown(onComplete) {
+    isCountdownActive = true;
+    let count = 3;
+    if (countdownOverlay) countdownOverlay.classList.remove('hidden');
+    if (countdownText) {
+        countdownText.textContent = count;
+        countdownText.style.fontSize = '72px';
+    }
+
+    let interval = setInterval(() => {
+        count--;
+        if (count > 0) {
+            if (countdownText) {
+                countdownText.style.animation = 'none';
+                void countdownText.offsetWidth;
+                countdownText.style.animation = 'popIn 0.3s ease-out';
+                countdownText.textContent = count;
+            }
+        } else if (count === 0) {
+            if (countdownText) {
+                countdownText.style.animation = 'none';
+                void countdownText.offsetWidth;
+                countdownText.style.animation = 'popIn 0.3s ease-out';
+                countdownText.style.fontSize = '32px';
+                countdownText.textContent = "BUON VOLO! 🚀";
+            }
+        } else {
+            clearInterval(interval);
+            if (countdownOverlay) countdownOverlay.classList.add('hidden');
+            isCountdownActive = false;
+            if (onComplete) onComplete();
+        }
+    }, 800);
+}
+
+function startGame() {
+    gameStarted = true; gameRunning = true; gamePaused = false;
+    keys.ArrowLeft = false; keys.ArrowRight = false;
+
+    if (startScreen) startScreen.classList.add('hidden');
+    if (planeModal) planeModal.classList.add('hidden');
+    if (gameOverScreen) gameOverScreen.classList.add('hidden');
+    if (pausePopup) pausePopup.classList.add('hidden');
+    if (restartConfirmPopup) restartConfirmPopup.classList.add('hidden');
+    
+    updateMobileControlsVisibility(true);
+
+    let activeConfig = WORLDS_DATA[selectedWorldIndex];
+    plane.emoji = activeConfig.emoji;
+    plane.speed = activeConfig.speed;
+    plane.x = canvas.width / 2 - plane.width / 2;
+    
+    obstacles = []; enemyLasers = []; playerLasers = []; particles = [];
+    score = 0; 
+    lives = activeConfig.lives;
+    gameSpeed = 3 + (activeConfig.world - 1) * 0.4;
+    subLevelTimer = 0;
+    obstacleTimer = 0;
+    shieldActive = false; doublePointsActive = false; tripleShotActive = false;
+
+    currentSubLevel = 1;
+    bossActive = false;
+    boss.health = 40 + activeConfig.world * 15;
+    boss.maxHealth = boss.health;
+    boss.x = canvas.width / 2 - boss.width / 2;
+    boss.y = 40;
+
+    if (currentScoreEl) currentScoreEl.textContent = score;
+    if (timerDisplayEl) timerDisplayEl.textContent = `Mondo ${activeConfig.world}-1`;
+    if (recordDisplayEl) recordDisplayEl.textContent = highScore;
+    updateLivesDisplay();
+
+    runCountdown(() => { updateGame(); });
+}
+
+if (startBtn) startBtn.addEventListener('click', startGame);
+
+function updateLivesDisplay() {
+    if (livesEl) livesEl.textContent = '❤'.repeat(Math.max(0, lives));
+}
+
 function spawnObstacle() {
     if (bossActive) return;
 
