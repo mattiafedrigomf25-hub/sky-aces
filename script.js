@@ -1006,7 +1006,7 @@ if (menuBtn) {
     });
 }
 
-// --- CONTROLLO AGGIORNAMENTI & POP-UP CHANGELOG CLOUD (CORRETTO) ---
+// --- CONTROLLO AGGIORNAMENTI & POP-UP CHANGELOG CLOUD (ANTI-CACHE MOBILE) ---
 async function checkForGameUpdates() {
     try {
         let antiCacheUrl = `https://api.jsonbin.io/v3/b/${BIN_ID}/latest?_t=${new Date().getTime()}`;
@@ -1018,11 +1018,8 @@ async function checkForGameUpdates() {
         
         let record = data.record || {};
         let cloudVersion = record.latestVersion || "4.1";
-        
-        // Controlliamo qual è l'ultima versione che l'utente ha già visto/aggiornato
         let lastSeenVersion = localStorage.getItem('sky_ace_acknowledged_version') || "4.1";
 
-        // Il pop-up compare SOLO se il cloud ha una versione PIÙ RECENTE di quella che l'utente ha già aggiornato
         if (cloudVersion !== CURRENT_GAME_VERSION && cloudVersion !== lastSeenVersion) {
             onlineVersionToInstall = cloudVersion;
             if (changelogTitle) changelogTitle.textContent = `Aggiornamento Disponibile: v${cloudVersion}`;
@@ -1043,18 +1040,34 @@ async function checkForGameUpdates() {
     }
 }
 
+// Funzione di esecuzione aggiornamento forzata
+function executeGameUpdate(e) {
+    if (e && e.cancelable) e.preventDefault();
+    if (e) e.stopPropagation();
+
+    // 1. Salva subito la versione approvata
+    if (onlineVersionToInstall) {
+        localStorage.setItem('sky_ace_acknowledged_version', onlineVersionToInstall);
+    } else {
+        localStorage.setItem('sky_ace_acknowledged_version', '4.3');
+    }
+
+    // 2. Nascondi subito il pop-up a schermo
+    if (updatePopup) {
+        updatePopup.classList.add('hidden');
+        updatePopup.style.display = 'none';
+    }
+
+    // 3. Ricarica la pagina forzando l'aggiornamento
+    setTimeout(() => {
+        window.location.href = window.location.pathname + '?v=' + new Date().getTime();
+    }, 100);
+}
+
 if (updateActionBtn) {
-    updateActionBtn.addEventListener('click', () => {
-        if (updatePopup) updatePopup.classList.add('hidden');
-        
-        // Memorizziamo che l'utente ha aggiornato all'ultima versione del cloud
-        if (onlineVersionToInstall) {
-            localStorage.setItem('sky_ace_acknowledged_version', onlineVersionToInstall);
-        }
-        
-        // Ricarica la pagina per applicare le modifiche pulite
-        window.location.href = window.location.pathname + '?update=' + new Date().getTime();
-    });
+    // Sostituiamo con gestione eventi diretta sia per Mobile che per Desktop
+    updateActionBtn.onclick = executeGameUpdate;
+    updateActionBtn.addEventListener('touchstart', executeGameUpdate, { passive: false });
 }
 draw();
 runInitialLoading();
