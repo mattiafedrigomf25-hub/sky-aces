@@ -1,18 +1,26 @@
-// --- CONFIGURAZIONE & RESET v4.0 PER CAMPAGNA 10 MONDI ---
+// --- CONFIGURAZIONE & RESET FORZATO v4.0 ---
 const CURRENT_GAME_VERSION = "4.0";
 const BIN_ID = '6ac4b87cffd5d1605351f58d';
 const MASTER_KEY = '$2a$10$aplyk/beh6fEjv43q.yWK.yNbASVpWB2lHxQ8.O3c9aj0.zzW4Kuu';
 
-// Impostiamo la versione di reset legata alla v4.0
 const SAVE_DATA_VERSION = "reset_v4.0"; 
 
+// Controlla se il dispositivo ha ancora i vecchi dati e puliscili a fondo
 if (localStorage.getItem('sky_ace_save_version') !== SAVE_DATA_VERSION) {
     localStorage.removeItem('sky_ace_total_score');
-    localStorage.removeItem('sky_ace_highscore'); // Azzera il record punti personale
+    localStorage.removeItem('sky_ace_highscore');
     localStorage.removeItem('sky_ace_unlocked');
     localStorage.removeItem('sky_ace_selected_id');
-    localStorage.setItem('sky_ace_max_world', '1'); // Riporta al Mondo 1
+    localStorage.removeItem('sky_ace_max_world');
+    localStorage.setItem('sky_ace_max_world', '1');
     localStorage.setItem('sky_ace_save_version', SAVE_DATA_VERSION);
+}
+
+// FORZATURA EXTRA: Azzera la variabile in memoria se legge un vecchio record residuo
+let highScore = parseInt(localStorage.getItem('sky_ace_highscore')) || 0;
+if (highScore > 0 && localStorage.getItem('sky_ace_save_version') === "reset_v4.0") {
+    highScore = 0;
+    localStorage.setItem('sky_ace_highscore', '0');
 }
 
 function isMobileDevice() {
