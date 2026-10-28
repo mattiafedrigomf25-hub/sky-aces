@@ -1,5 +1,5 @@
 // --- CONFIGURAZIONE & RESET FORZATO v4.0 ---
-const CURRENT_GAME_VERSION = "4.0";
+const CURRENT_GAME_VERSION = "4.1";
 const BIN_ID = '6ac4b87cffd5d1605351f58d';
 const MASTER_KEY = '$2a$10$aplyk/beh6fEjv43q.yWK.yNbASVpWB2lHxQ8.O3c9aj0.zzW4Kuu';
 
@@ -20,18 +20,18 @@ function isMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
 }
 
-// --- DEFINIZIONE STRUTTURATA DEI 10 MONDI E DEI VELIVOLI ---
+// --- DEFINIZIONE STRUTTURATA DEI 10 MONDI E DEI VELIVOLI (BILANCIATA SU 90s) ---
 const WORLDS_DATA = [
     { world: 1, name: "Training Skies", emoji: "✈️", planeName: "Aereo Standard", targetScore: 120, speed: 6, lives: 3, perk: "Bilanciato", shootType: "single" },
-    { world: 2, name: "Storm Valley", emoji: "🛩️", planeName: "Caccia Agile", targetScore: 250, speed: 8, lives: 2, perk: "Velocità +33% / Vita -1", shootType: "single" },
-    { world: 3, name: "Neon City", emoji: "🛫", planeName: "Doppio Cannone", targetScore: 400, speed: 6.5, lives: 3, perk: "Doppio Sparo di Base", shootType: "double" },
-    { world: 4, name: "Canyon Run", emoji: "🚁", planeName: "Girocottero", targetScore: 600, speed: 7, lives: 4, perk: "Scudo +1 Vita Extra", shootType: "single" },
-    { world: 5, name: "Asteroid Field", emoji: "🛬", planeName: "Interceptor", targetScore: 850, speed: 6.5, lives: 3, perk: "Triplo Sparo Nativo", shootType: "triple" },
-    { world: 6, name: "Volcano Alley", emoji: "🛸", planeName: "Stealth Jet", targetScore: 1150, speed: 7.5, lives: 3, perk: "Magnete Bonus integrato", shootType: "double" },
-    { world: 7, name: "Frozen Peaks", emoji: "⚡", planeName: "Thunderbolt", targetScore: 1500, speed: 8.5, lives: 3, perk: "Ricarica Fuoco Rapido", shootType: "triple" },
-    { world: 8, name: "Orbital Station", emoji: "🛡️", planeName: "Dreadnought", targetScore: 1900, speed: 5.5, lives: 5, perk: "Corazzato 5 Vite Base", shootType: "double" },
-    { world: 9, name: "Deep Nebula", emoji: "🌌", planeName: "Aero-Phantasm", targetScore: 2400, speed: 8, lives: 4, perk: "Sparo Quadruplo", shootType: "quad" },
-    { world: 10, name: "Core Final Bastion", emoji: "👑", planeName: "Sky Ace Supreme", targetScore: 3000, speed: 9, lives: 5, perk: "Potenza e Agilità Massima", shootType: "quad" }
+    { world: 2, name: "Storm Valley", emoji: "🛩️", planeName: "Caccia Agile", targetScore: 200, speed: 8, lives: 2, perk: "Velocità +33% / Vita -1", shootType: "single" },
+    { world: 3, name: "Neon City", emoji: "🛫", planeName: "Doppio Cannone", targetScore: 300, speed: 6.5, lives: 3, perk: "Doppio Sparo di Base", shootType: "double" },
+    { world: 4, name: "Canyon Run", emoji: "🚁", planeName: "Girocottero", targetScore: 420, speed: 7, lives: 4, perk: "Scudo +1 Vita Extra", shootType: "single" },
+    { world: 5, name: "Asteroid Field", emoji: "🛬", planeName: "Interceptor", targetScore: 560, speed: 6.5, lives: 3, perk: "Triplo Sparo Nativo", shootType: "triple" },
+    { world: 6, name: "Volcano Alley", emoji: "🛸", planeName: "Stealth Jet", targetScore: 720, speed: 7.5, lives: 3, perk: "Magnete Bonus integrato", shootType: "double" },
+    { world: 7, name: "Frozen Peaks", emoji: "⚡", planeName: "Thunderbolt", targetScore: 900, speed: 8.5, lives: 3, perk: "Ricarica Fuoco Rapido", shootType: "triple" },
+    { world: 8, name: "Orbital Station", emoji: "🛡️", planeName: "Dreadnought", targetScore: 1100, speed: 5.5, lives: 5, perk: "Corazzato 5 Vite Base", shootType: "double" },
+    { world: 9, name: "Deep Nebula", emoji: "🌌", planeName: "Aero-Phantasm", targetScore: 1300, speed: 8, lives: 4, perk: "Sparo Quadruplo", shootType: "quad" },
+    { world: 10, name: "Core Final Bastion", emoji: "👑", planeName: "Sky Ace Supreme", targetScore: 1500, speed: 9, lives: 5, perk: "Potenza e Agilità Massima", shootType: "quad" }
 ];
 
 let pilotId = localStorage.getItem('sky_ace_pilot_name') || "";
@@ -222,7 +222,7 @@ let enemyLasers = [];
 let playerLasers = [];
 let shootCooldown = 0;
 let obstacleTimer = 0;
-let spawnRate = 40; 
+let spawnRate = 32; 
 let gameSpeed = 3;
 let score = 0; 
 let lives = 3;
@@ -248,6 +248,8 @@ let doublePointsActive = false;
 let doublePointsTimer = 0;
 let tripleShotActive = false;
 let tripleShotTimer = 0;
+
+let pendingShieldBonus = false;
 
 let keys = { ArrowLeft: false, ArrowRight: false };
 
@@ -531,7 +533,14 @@ function startGame() {
     gameSpeed = 3 + (activeConfig.world - 1) * 0.4;
     subLevelTimer = 0;
     obstacleTimer = 0;
-    shieldActive = false; doublePointsActive = false; tripleShotActive = false;
+    
+    if (pendingShieldBonus) {
+        shieldActive = true; shieldTimer = 400;
+        pendingShieldBonus = false;
+    } else {
+        shieldActive = false;
+    }
+    doublePointsActive = false; tripleShotActive = false;
 
     currentSubLevel = 1;
     bossActive = false;
@@ -560,9 +569,9 @@ function spawnObstacle() {
     let rand = Math.random();
     let type, symbol, points, width, height;
 
-    if (rand < 0.40) { type = 'lightning'; symbol = '⚡'; points = 1; width = 40; height = 30; }
-    else if (rand < 0.68) { type = 'laserEnemy'; symbol = '🛩️'; points = -5; width = 40; height = 40; }
-    else if (rand < 0.80) { type = 'bonus'; symbol = '🌟'; points = 5; width = 40; height = 40; }
+    if (rand < 0.35) { type = 'lightning'; symbol = '⚡'; points = 1; width = 40; height = 30; }
+    else if (rand < 0.65) { type = 'laserEnemy'; symbol = '🛩️'; points = 10; width = 40; height = 40; }
+    else if (rand < 0.82) { type = 'bonus'; symbol = '🌟'; points = 5; width = 40; height = 40; }
     else if (rand < 0.90) { type = 'shield'; symbol = '🛡️'; points = 5; width = 40; height = 40; }
     else if (rand < 0.96) { type = 'tripleShot'; symbol = '🎯'; points = 8; width = 40; height = 40; }
     else { type = 'double'; symbol = '💎'; points = 10; width = 40; height = 40; }
@@ -756,16 +765,26 @@ function updateGame() {
                 playerLasers.splice(j, 1);
 
                 if (boss.health <= 0) {
-                    addParticles(boss.x + boss.width / 2, boss.y + boss.height / 2, '#69f0ae', 40);
+                    addParticles(boss.x + boss.width / 2, boss.y + boss.height / 2, '#69f0ae', 45);
                     
-                    if (score >= activeConfig.targetScore) {
-                        if (activeConfig.world === maxWorldReached && maxWorldReached < 10) {
-                            maxWorldReached++;
-                        }
-                        triggerVictory();
+                    let customMsg = "";
+                    let missingPoints = activeConfig.targetScore - score;
+
+                    if (missingPoints > 0) {
+                        score += missingPoints;
+                        customMsg = `Boss abbattuto! Esplosione di +${missingPoints} pt Bonus per raggiungere l'obiettivo del Mondo ${activeConfig.world}!`;
                     } else {
-                        triggerGameOver("Mondo non superato: Obiettivo Punti insufficiente!");
+                        score += 150;
+                        pendingShieldBonus = true;
+                        customMsg = `Boss dominato! +150 pt Extra ottenuti & Scudo Bonus sbloccato per il prossimo Mondo!`;
                     }
+
+                    if (currentScoreEl) currentScoreEl.textContent = score;
+
+                    if (activeConfig.world === maxWorldReached && maxWorldReached < 10) {
+                        maxWorldReached++;
+                    }
+                    triggerVictory(customMsg);
                     return;
                 }
                 break;
@@ -865,7 +884,7 @@ function updateGame() {
     requestAnimationFrame(updateGame);
 }
 
-async function triggerVictory() {
+async function triggerVictory(customMessage = "") {
     gameRunning = false;
     updateMobileControlsVisibility(false);
 
@@ -875,8 +894,22 @@ async function triggerVictory() {
     await saveProgressToCloud();
 
     if (gameOverTitle) gameOverTitle.textContent = "🏆 MONDO COMPLETATO!";
-    if (gameOverReason) gameOverReason.textContent = `Hai superato il Mondo ${activeConfig.world}! Nuovo Mondo sbloccato!`;
+    if (gameOverReason) gameOverReason.textContent = customMessage || `Hai superato il Mondo ${activeConfig.world}! Nuovo Mondo sbloccato!`;
     if (finalScoreEl) finalScoreEl.textContent = score;
+
+    if (restartBtn) {
+        restartBtn.textContent = `Passa al Mondo Successivo 🚀`;
+        restartBtn.onclick = () => {
+            if (selectedWorldIndex < WORLDS_DATA.length - 1 && selectedWorldIndex + 1 < maxWorldReached) {
+                selectedWorldIndex++;
+            }
+            if (gameOverScreen) gameOverScreen.classList.add('hidden');
+            if (saveScoreSection) saveScoreSection.classList.remove('hidden');
+            restartBtn.disabled = false;
+            startGame();
+        };
+    }
+
     if (gameOverScreen) gameOverScreen.classList.remove('hidden');
     fetchLeaderboard();
 }
@@ -888,9 +921,22 @@ async function triggerGameOver(reason = "") {
     if (score > highScore) highScore = score;
     await saveProgressToCloud();
 
+    let activeConfig = WORLDS_DATA[selectedWorldIndex];
+
     if (gameOverTitle) gameOverTitle.textContent = "MISSIONE FALLITA";
     if (gameOverReason) gameOverReason.textContent = reason || `Punteggio finale: ${score}`;
     if (finalScoreEl) finalScoreEl.textContent = score;
+
+    if (restartBtn) {
+        restartBtn.textContent = `Ripeti Mondo ${activeConfig.world} 🔄`;
+        restartBtn.onclick = () => {
+            if (gameOverScreen) gameOverScreen.classList.add('hidden');
+            if (saveScoreSection) saveScoreSection.classList.remove('hidden');
+            restartBtn.disabled = false;
+            startGame();
+        };
+    }
+
     if (gameOverScreen) gameOverScreen.classList.remove('hidden');
     fetchLeaderboard();
 }
@@ -945,15 +991,6 @@ if (saveBtn) {
         } catch (error) {
             saveBtn.disabled = false; saveBtn.textContent = "Salva in Classifica";
         }
-    });
-}
-
-if (restartBtn) {
-    restartBtn.addEventListener('click', () => {
-        if (gameOverScreen) gameOverScreen.classList.add('hidden');
-        if (saveScoreSection) saveScoreSection.classList.remove('hidden');
-        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "Salva in Classifica"; }
-        startGame();
     });
 }
 
