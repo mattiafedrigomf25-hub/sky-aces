@@ -1,4 +1,4 @@
-// --- CONFIGURAZIONE & RESET FORZATO v4.0 ---
+// --- CONFIGURAZIONE & RESET FORZATO v4.1 ---
 const CURRENT_GAME_VERSION = "4.1";
 const BIN_ID = '6ac4b87cffd5d1605351f58d';
 const MASTER_KEY = '$2a$10$aplyk/beh6fEjv43q.yWK.yNbASVpWB2lHxQ8.O3c9aj0.zzW4Kuu';
@@ -286,6 +286,7 @@ async function runInitialLoading() {
             setTimeout(() => {
                 if (splashScreen) splashScreen.classList.add('hidden');
                 proceedToGameOrLogin();
+                checkForGameUpdates(); // Controllo aggiornamenti all'avvio
             }, 200);
         }
     }, 40);
@@ -1002,6 +1003,43 @@ if (menuBtn) {
         gameStarted = false; gameRunning = false;
         updateMobileControlsVisibility(false);
         if (startScreen) startScreen.classList.remove('hidden');
+    });
+}
+
+// --- CONTROLLO AGGIORNAMENTI & POP-UP CHANGELOG CLOUD ---
+async function checkForGameUpdates() {
+    try {
+        let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+            headers: { 'X-Master-Key': MASTER_KEY }
+        });
+        let data = await response.json();
+        let record = data.record || {};
+        let cloudVersion = record.latestVersion || "4.1";
+
+        if (cloudVersion !== CURRENT_GAME_VERSION) {
+            onlineVersionToInstall = cloudVersion;
+            if (changelogTitle) changelogTitle.textContent = `Aggiornamento Disponibile: v${cloudVersion}`;
+            
+            if (changelogList && record.changelog) {
+                changelogList.innerHTML = '';
+                record.changelog.forEach(item => {
+                    let li = document.createElement('li');
+                    li.innerHTML = `<strong>[${item.category}]</strong> ${item.description}`;
+                    changelogList.appendChild(li);
+                });
+            }
+
+            if (updatePopup) updatePopup.classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error("Errore controllo aggiornamenti:", error);
+    }
+}
+
+if (updateActionBtn) {
+    updateActionBtn.addEventListener('click', () => {
+        if (updatePopup) updatePopup.classList.add('hidden');
+        window.location.reload();
     });
 }
 
