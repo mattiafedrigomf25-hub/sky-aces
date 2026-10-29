@@ -679,10 +679,10 @@ function updateGame() {
     subLevelTimer++;
 
     if (!bossActive) {
-        if (subLevelTimer >= 2200 && currentSubLevel === 1) {
+        if (subLevelTimer >= 2350 && currentSubLevel === 1) {
             currentSubLevel = 2; subLevelTimer = 0;
             if (timerDisplayEl) timerDisplayEl.textContent = `Mondo ${activeConfig.world}-2`;
-        } else if (subLevelTimer >= 4500 && currentSubLevel === 2) {
+        } else if (subLevelTimer >= 4800 && currentSubLevel === 2) {
             currentSubLevel = 3;
             bossActive = true;
             boss.x = canvas.width / 2 - boss.width / 2;
