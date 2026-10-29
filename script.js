@@ -570,7 +570,7 @@ function spawnObstacle() {
     let rand = Math.random();
     let type, symbol, points, width, height;
 
-    if (rand < 0.35) { type = 'lightning'; symbol = '⚡'; points = 1; width = 40; height = 30; }
+    if (rand < 0.35) { type = 'lightning'; symbol = '⚡'; points = 3; width = 40; height = 30; }
     else if (rand < 0.65) { type = 'laserEnemy'; symbol = '🛩️'; points = 10; width = 40; height = 40; }
     else if (rand < 0.82) { type = 'bonus'; symbol = '🌟'; points = 5; width = 40; height = 40; }
     else if (rand < 0.90) { type = 'shield'; symbol = '🛡️'; points = 5; width = 40; height = 40; }
