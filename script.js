@@ -35,7 +35,7 @@ const WORLDS_DATA = [
 
 // --- MODULI GARAGE & DRONI (FASE 3) ---
 const GARAGE_MODULES = [
-    { id: "drone_wingman", name: "Caccia di Supporto", emoji: "🛩️", reqWorld: 2, desc: "Affianca il caccia principale con fuoco laser di scorta.", equipped: true },
+    { id: "drone_wingman", name: "Caccia di Supporto", emoji: "🛩️", reqWorld: 2, desc: "Affianca il caccia principale con fuoco laser di scorta.", equipped: false },
     { id: "quantum_magnet", name: "Magnete Quantistico", emoji: "🧲", reqWorld: 4, desc: "Attira automaticamente i bonus vicini.", equipped: false },
     { id: "energy_shield", name: "Scudo Rigenerativo", emoji: "🛡️", reqWorld: 6, desc: "Inizia ogni missione con uno scudo protettivo attivo.", equipped: false },
     { id: "hyper_thruster", name: "Propulsore Ionico", emoji: "⚡", reqWorld: 8, desc: "Aumenta del 15% la reattività di movimento.", equipped: false }
