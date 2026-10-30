@@ -17,7 +17,11 @@
         
         <div class="score-board">
             <div>Punti: <strong id="current-score">0</strong></div>
-            <div id="timer-container"><span id="timer-display">Mondo 1-1</span></div>
+            <div id="timer-container">
+                <span id="timer-display">Mondo 1-1</span>
+                <div id="combo-display" style="font-size: 12px; color: #ff9800; font-weight: bold; text-shadow: 0 0 4px rgba(0,0,0,0.8); min-height: 14px; text-align: center;"></div>
+                <div id="weather-display" style="font-size: 11px; color: #29b6f6; font-weight: bold; text-shadow: 0 0 4px rgba(0,0,0,0.8); min-height: 14px; text-align: center;"></div>
+            </div>
             <div style="display: flex; align-items: center; gap: 4px;">
                 <span id="record-container">Rec: <span id="record-display">0</span></span>
                 <span id="lives-display">❤❤❤</span>
@@ -86,29 +90,34 @@
             <!-- 5. SCHERMATA DI AVVIO / MENU -->
             <div id="start-screen" class="hidden">
                 <h2>SKY ACE</h2>
-                <p style="font-size: 12px; margin-bottom: 12px;">Campagna a 10 Mondi: Supera gli obiettivi per avanzare!</p>
-                <div class="plane-selection" style="display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 220px; align-items: center;">
-                    <button id="open-plane-modal-btn" style="background-color: #ab47bc; width: 100%;">Seleziona Mondo & Aereo 🗺️</button>
-                    <button id="start-btn" style="background-color: #29b6f6; font-size: 16px; padding: 12px 24px; width: 100%;">INIZIA MISSIONE 🚀</button>
-                    <button id="main-exit-btn" class="pc-only-btn" style="background-color: #d32f2f; font-size: 14px; padding: 10px 20px; width: 100%; margin-top: 5px;">Esci dal Gioco 🚪</button>
+                <p style="font-size: 12px; margin-bottom: 10px;">Campagna a 10 Mondi: Supera gli obiettivi!</p>
+                <div class="plane-selection" style="display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 220px; align-items: center;">
+                    <button id="open-plane-modal-btn" style="background-color: #ab47bc; width: 100%;">Selezione Mondi 🗺️</button>
+                    <button id="open-garage-modal-btn" style="background-color: #ff9800; width: 100%;">Potenziamenti🔧🛩️</button>
+                    <button id="start-btn" style="background-color: #29b6f6; font-size: 15px; padding: 10px 20px; width: 100%;">INIZIA MISSIONE 🚀</button>
+                    <button id="main-exit-btn" class="pc-only-btn" style="background-color: #d32f2f; font-size: 13px; padding: 8px 16px; width: 100%;">Esci dal Gioco 🚪</button>
                 </div>
-                <p class="start-hint" style="margin-top: 12px;">Usa le frecce ⬅️ ➡️ o i tasti su schermo</p>
+                <p class="start-hint" style="margin-top: 8px;">Usa le frecce ⬅️ ➡️ o i tasti su schermo</p>
                 <div class="sync-info">☁️ Pilota: <span id="start-pilot-name" style="color:#ffd54f;">---</span></div>
-                <div class="version-info">v<span id="current-version-label">4.0</span></div>
+                <div class="version-info">v<span id="current-version-label">5.0</span></div>
             </div>
 
-            <!-- Modale Mappa Mondi & Hangar -->
+            <!-- Modale Mappa Mondi & Hangar Aerei -->
             <div id="plane-modal" class="modal hidden">
                 <div class="modal-content" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
                     <h2>SELEZIONE MONDI & VELIVOLI</h2>
                     <div id="plane-grid" class="plane-grid"></div>
-                    
-                    <div class="cloud-box">
-                        Pilota Cloud: <strong id="display-pilot-id" style="color: #69f0ae;">---</strong>
-                        <button id="change-pilot-id-btn" style="padding: 2px 6px; font-size: 10px; margin-left: 5px; background: #718096;">Cambia 👤</button>
-                    </div>
+                    <button id="close-plane-modal-btn" style="background-color: #512da8; margin-top:5px;">Chiudi Mappa</button>
+                </div>
+            </div>
 
-                    <button id="close-plane-modal-btn" style="background-color: #512da8;">Chiudi Mappa</button>
+            <!-- Modale Garage & Potenziamenti (Fase 3/4) -->
+            <div id="garage-modal" class="modal hidden">
+                <div class="modal-content" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+                    <h2>GARAGE & POTENZIAMENTI</h2>
+                    <p style="font-size: 11px; color: #b39ddb; margin: 2px 0 8px 0;">Sblocca moduli avanzando nei mondi!</p>
+                    <div id="garage-grid" class="plane-grid"></div>
+                    <button id="close-garage-modal-btn" style="background-color: #512da8; margin-top:5px;">Torna al Menù</button>
                 </div>
             </div>
 
@@ -181,7 +190,7 @@
         <p style="font-size: 12px; color: #a1887f; margin-top: 15px;">Puoi chiudere questa scheda o minimizzare il browser.</p>
     </div>
 
-    <script src="script.js?v=4.6"></script>
+    <script src="script.js?v=4.7"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
