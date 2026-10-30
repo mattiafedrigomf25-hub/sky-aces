@@ -1,4 +1,4 @@
-// --- CONFIGURAZIONE & RESET FORZATO v5.2 ---
+// --- CONFIGURAZIONE & RESET FORZATO v4.7 ---
 const CURRENT_GAME_VERSION = "4.7";
 const BIN_ID = '6ac4b87cffd5d1605351f58d';
 const MASTER_KEY = '$2a$10$aplyk/beh6fEjv43q.yWK.yNbASVpWB2lHxQ8.O3c9aj0.zzW4Kuu';
@@ -667,7 +667,6 @@ function draw() {
 
     let activeConfig = WORLDS_DATA[selectedWorldIndex];
 
-    // --- DISEGNO NUVOLE SOFFICI (PARALLASSE) ---
     for (let cl of clouds) {
         ctx.save();
         ctx.fillStyle = 'rgba(255, 255, 255, ' + cl.alpha + ')';
@@ -690,7 +689,6 @@ function draw() {
         ctx.restore();
     }
 
-    // --- SCUDO CONDIVISO SU ENTRAMBI I VELIVOLI SE ATTIVO ---
     if (shieldActive) {
         ctx.strokeStyle = '#29b6f6';
         ctx.lineWidth = 4;
@@ -708,7 +706,6 @@ function draw() {
         }
     }
 
-    // --- DISEGNO CACCIA DI SUPPORTO (SE EQUIPAGGIATO) ---
     let droneEquipped = GARAGE_MODULES.find(m => m.id === 'drone_wingman')?.equipped;
     if (droneEquipped) {
         ctx.save();
@@ -788,7 +785,6 @@ function updateGame() {
     let activeConfig = WORLDS_DATA[selectedWorldIndex];
     subLevelTimer++;
 
-    // --- GESTIONE NUVOLE IN PARALLASSE ---
     if (Math.random() < 0.04 && clouds.length < 12) {
         clouds.push({
             x: Math.random() * canvas.width,
@@ -808,7 +804,6 @@ function updateGame() {
         }
     }
 
-    // --- SCIE DI FUMO DIETRO L' AEREO E IL DRONE ---
     planeTrailTimer++;
     if (planeTrailTimer % 1 === 0) {
         particles.push({
@@ -1064,7 +1059,6 @@ function updateGame() {
             plane.y + plane.height - padding > obs.y + obs.height
         );
 
-        // --- COLLISIONE CACCIA DI SUPPORTO (PRECISA E BILANCIATA AI BORDI) ---
         let droneEquipped = GARAGE_MODULES.find(m => m.id === 'drone_wingman')?.equipped;
         let droneX = plane.x + plane.width + 18;
         let droneY = plane.y + 18;
@@ -1259,8 +1253,8 @@ async function checkForGameUpdates() {
         let response = await fetch(antiCacheUrl, { headers: { 'X-Master-Key': MASTER_KEY } });
         let data = await response.json();
         let record = data.record || {};
-        let cloudVersion = record.latestVersion || "4.1";
-        let lastSeenVersion = localStorage.getItem('sky_ace_acknowledged_version') || "4.1";
+        let cloudVersion = record.latestVersion || "4.6";
+        let lastSeenVersion = localStorage.getItem('sky_ace_acknowledged_version') || "4.6";
 
         if (cloudVersion !== CURRENT_GAME_VERSION && cloudVersion !== lastSeenVersion) {
             onlineVersionToInstall = cloudVersion;
@@ -1273,7 +1267,7 @@ async function checkForGameUpdates() {
                     changelogList.appendChild(li);
                 });
             }
-            if (updatePopup) updatePopup.classList.add('hidden');
+            if (updatePopup) updatePopup.classList.remove('hidden');
         }
     } catch (error) {}
 }
