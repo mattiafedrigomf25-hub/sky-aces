@@ -96,12 +96,24 @@ canvas {
     100% { transform: scale(1); opacity: 1; }
 }
 
-#splash-screen, #login-screen, #start-screen, .modal, #pause-popup, #restart-confirm-popup, #game-over-screen, #update-popup, #download-screen {
+/* Schermate di sistema (senza forzare .modal qui dentro) */
+#splash-screen, #login-screen, #start-screen, #pause-popup, #restart-confirm-popup, #game-over-screen, #update-popup, #download-screen {
     position: absolute;
     top: 4px; left: 4px; right: 4px; bottom: 4px;
     background-color: rgba(26, 11, 75, 0.96);
     border-radius: 8px;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 15px; box-sizing: border-box; z-index: 20;
+}
+
+/* Gestione separata e corretta per i modali (Garage e Selezione Aerei) per evitare conflitti con .hidden */
+.modal {
+    position: absolute;
+    top: 4px; left: 4px; right: 4px; bottom: 4px;
+    background-color: rgba(26, 11, 75, 0.96);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column; align-items: center; justify-content: center;
     padding: 15px; box-sizing: border-box; z-index: 20;
 }
 
