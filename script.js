@@ -706,11 +706,11 @@ function draw() {
         }
     }
 
-    let droneEquipped = GARAGE_MODULES.find(m => m.id === 'drone_wingman')?.equipped;
+   let droneEquipped = GARAGE_MODULES.find(m => m.id === 'drone_wingman')?.equipped;
     if (droneEquipped) {
         ctx.save();
         ctx.translate(plane.x + plane.width + 18, plane.y + 18);
-        ctx.rotate(-Math.PI / 4);
+        // ctx.rotate(-Math.PI / 4);  <-- tolta o commentata
         ctx.font = '22px sans-serif';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText('🛩️', 0, 0);
