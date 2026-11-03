@@ -1053,23 +1053,21 @@ function updateGame() {
         if (!obstacles[i]) continue;
 
         let padding = 10;
-        let planeHit = (
-            plane.x + padding < obs.x + obs.width - padding &&
-            plane.x + plane.width - padding > obs.x + padding &&
-            plane.y + padding < obs.y + obs.height - padding &&
-            plane.y + plane.height - padding > obs.y + obs.height
-        );
-
         let droneEquipped = GARAGE_MODULES.find(m => m.id === 'drone_wingman')?.equipped;
-        let droneX = plane.x + plane.width + 18;
-        let droneY = plane.y + 18;
-        let dronePadding = 8;
-        let droneHit = droneEquipped && (
-            droneX + dronePadding < obs.x + obs.width - dronePadding &&
-            droneX + 30 - dronePadding > obs.x + dronePadding &&
-            droneY + dronePadding < obs.y + obs.height - dronePadding &&
-            droneY + 30 - dronePadding > obs.y + dronePadding
+
+        // Area di presa unificata (Aereo + Spazio centrale + Drone)
+        let leftBoundary = plane.x + padding;
+        let rightBoundary = droneEquipped ? (plane.x + plane.width + 18 + 30 - padding) : (plane.x + plane.width - padding);
+        let topBoundary = plane.y + padding;
+        let bottomBoundary = plane.y + plane.height - padding;
+
+        let planeHit = (
+            leftBoundary < obs.x + obs.width - padding &&
+            rightBoundary > obs.x + padding &&
+            topBoundary < obs.y + obs.height - padding &&
+            bottomBoundary > obs.y + padding
         );
+        let droneHit = false; // Gestito direttamente dal bounding box unificato (planeHit)
 
         if (planeHit || droneHit) {
             addParticles(obs.x + obs.width / 2, obs.y + obs.height / 2, '#ff9800', 12);
