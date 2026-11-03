@@ -628,27 +628,31 @@ function spawnObstacle() {
 
     if (currentWeather === 'starRain') {
         let subRand = Math.random();
-        if (subRand < 0.45) { type = 'bonus'; symbol = '🌟'; points = 2; width = 40; height = 40; }
-        else if (subRand < 0.80) { type = 'double'; symbol = '💎'; points = 5; width = 40; height = 40; }
-        else if (subRand < 0.90) { type = 'shield'; symbol = '🛡️'; points = 2; width = 40; height = 40; }
-        else { type = 'tripleShot'; symbol = '🎯'; points = 4; width = 40; height = 40; }
+        if (subRand < 0.40) { type = 'bonus'; symbol = '🌟'; points = 2; width = 40; height = 40; }
+        else if (subRand < 0.70) { type = 'double'; symbol = '💎'; points = 5; width = 40; height = 40; }
+        else if (subRand < 0.82) { type = 'shield'; symbol = '🛡️'; points = 2; width = 40; height = 40; }
+        else if (subRand < 0.92) { type = 'tripleShot'; symbol = '🎯'; points = 4; width = 40; height = 40; }
+        else { type = 'heart'; symbol = '❤️'; points = 0; width = 40; height = 40; }
     } else if (currentWeather === 'catastrophicStorm') {
         let subRand = Math.random();
-        if (subRand < 0.65) { type = 'lightning'; symbol = '⚡'; points = 3; width = 40; height = 30; }
-        else if (subRand < 0.90) { type = 'laserEnemy'; symbol = '☄️'; points = 6; width = 40; height = 40; }
-        else { type = 'bonus'; symbol = '🌟'; points = 2; width = 40; height = 40; }
+        if (subRand < 0.60) { type = 'lightning'; symbol = '⚡'; points = 3; width = 40; height = 30; }
+        else if (subRand < 0.85) { type = 'laserEnemy'; symbol = '☄️'; points = 6; width = 40; height = 40; }
+        else if (subRand < 0.95) { type = 'bonus'; symbol = '🌟'; points = 2; width = 40; height = 40; }
+        else { type = 'heart'; symbol = '❤️'; points = 0; width = 40; height = 40; }
     } else if (currentWeather === 'lightningStorm') {
         let subRand = Math.random();
-        if (subRand < 0.55) { type = 'lightning'; symbol = '⚡'; points = 3; width = 40; height = 30; }
-        else if (subRand < 0.80) { type = 'laserEnemy'; symbol = '🛩️'; points = 4; width = 40; height = 40; }
-        else { type = 'bonus'; symbol = '🌟'; points = 2; width = 40; height = 40; }
+        if (subRand < 0.50) { type = 'lightning'; symbol = '⚡'; points = 3; width = 40; height = 30; }
+        else if (subRand < 0.75) { type = 'laserEnemy'; symbol = '🛩️'; points = 4; width = 40; height = 40; }
+        else if (subRand < 0.90) { type = 'bonus'; symbol = '🌟'; points = 2; width = 40; height = 40; }
+        else { type = 'heart'; symbol = '❤️'; points = 0; width = 40; height = 40; }
     } else {
-        if (rand < 0.35) { type = 'lightning'; symbol = '⚡'; points = 3; width = 40; height = 30; }
-        else if (rand < 0.65) { type = 'laserEnemy'; symbol = '🛩️'; points = 4; width = 40; height = 40; }
-        else if (rand < 0.82) { type = 'bonus'; symbol = '🌟'; points = 2; width = 40; height = 40; }
-        else if (rand < 0.90) { type = 'shield'; symbol = '🛡️'; points = 2; width = 40; height = 40; }
-        else if (rand < 0.96) { type = 'tripleShot'; symbol = '🎯'; points = 4; width = 40; height = 40; }
-        else { type = 'double'; symbol = '💎'; points = 5; width = 40; height = 40; }
+        if (rand < 0.32) { type = 'lightning'; symbol = '⚡'; points = 3; width = 40; height = 30; }
+        else if (rand < 0.60) { type = 'laserEnemy'; symbol = '🛩️'; points = 4; width = 40; height = 40; }
+        else if (rand < 0.77) { type = 'bonus'; symbol = '🌟'; points = 2; width = 40; height = 40; }
+        else if (rand < 0.85) { type = 'shield'; symbol = '🛡️'; points = 2; width = 40; height = 40; }
+        else if (rand < 0.91) { type = 'tripleShot'; symbol = '🎯'; points = 4; width = 40; height = 40; }
+        else if (rand < 0.95) { type = 'double'; symbol = '💎'; points = 5; width = 40; height = 40; }
+        else { type = 'heart'; symbol = '❤️'; points = 0; width = 40; height = 40; }
     }
 
     let x = Math.random() * (canvas.width - width);
@@ -695,22 +699,13 @@ function draw() {
         ctx.beginPath();
         ctx.arc(plane.x + plane.width / 2, plane.y + plane.height / 2, 28, 0, Math.PI * 2);
         ctx.stroke();
-
-        let droneEquipped = GARAGE_MODULES.find(m => m.id === 'drone_wingman')?.equipped;
-        if (droneEquipped) {
-            let droneX = plane.x + plane.width + 18;
-            let droneY = plane.y + 18;
-            ctx.beginPath();
-            ctx.arc(droneX, droneY, 22, 0, Math.PI * 2);
-            ctx.stroke();
-        }
     }
 
-   let droneEquipped = GARAGE_MODULES.find(m => m.id === 'drone_wingman')?.equipped;
+    let droneEquipped = GARAGE_MODULES.find(m => m.id === 'drone_wingman')?.equipped;
     if (droneEquipped) {
         ctx.save();
         ctx.translate(plane.x + plane.width + 18, plane.y + 18);
-        ctx.rotate(-Math.PI / 2); // <-- Rotazione positiva per raddrizzare l'emoji inclinata
+        ctx.rotate(-Math.PI / 2); // <-- Rotazione corretta per raddrizzare l'aereo di supporto verso l'alto
         ctx.font = '22px sans-serif';
         ctx.textAlign = 'center'; 
         ctx.textBaseline = 'middle';
@@ -1071,6 +1066,7 @@ function updateGame() {
 
         if (planeHit || droneHit) {
             addParticles(obs.x + obs.width / 2, obs.y + obs.height / 2, '#ff9800', 12);
+            
             if (obs.type === 'lightning') {
                 comboCount = 0;
                 comboTimer = 0;
@@ -1089,6 +1085,13 @@ function updateGame() {
                     comboTimer = 0;
                     if (comboDisplayEl) comboDisplayEl.textContent = "";
                     updateScoreAndRecord(-10);
+                }
+            } else if (obs.type === 'heart') {
+                // GESTIONE CUORE / VITA EXTRA (max 3 vite)
+                if (lives < 3) {
+                    lives++;
+                    updateLivesDisplay();
+                    addParticles(obs.x + obs.width / 2, obs.y + obs.height / 2, '#e91e63', 15);
                 }
             } else {
                 comboCount++;
