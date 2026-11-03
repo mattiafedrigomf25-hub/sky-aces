@@ -710,7 +710,7 @@ function draw() {
     if (droneEquipped) {
         ctx.save();
         ctx.translate(plane.x + plane.width + 18, plane.y + 18);
-        ctx.rotate(Math.PI / 4); // <-- Rotazione positiva per raddrizzare l'emoji inclinata
+        ctx.rotate(-Math.PI / 4); // <-- Rotazione positiva per raddrizzare l'emoji inclinata
         ctx.font = '22px sans-serif';
         ctx.textAlign = 'center'; 
         ctx.textBaseline = 'middle';
